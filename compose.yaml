@@ -1,0 +1,11 @@
+services:
+  db:
+    container_name: "koalainv-db-test"
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - "./database/postgres-data:/var/lib/postgresql"
+    restart: unless-stopped
