@@ -12,7 +12,7 @@ export default function Ticker() {
         {[...items, ...items, ...items].map((item, i) => (
           <span
             key={i}
-            className="mx-6 inline-flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-white"
+            className="mx-6 inline-flex items-center gap-2 text-xs font-medium uppercase tracking-widest "
           >
             <span className="h-1.5 w-1.5 rounded-full bg-primary" />
             {item}

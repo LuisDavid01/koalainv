@@ -1,0 +1,7 @@
+- [ ] crear inventario
+- [ ] auth
+- [ ] importar  facturas xml de hacienda
+- [ ] crear facturas para enviarse a hacienda
+- [ ] validar facturas
+- [ ] dashboards
+- [ ] pagos a nuestra app 

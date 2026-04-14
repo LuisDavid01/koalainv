@@ -1,33 +1,40 @@
-import { ShoppingCart, FileText, Package, Users, BarChart3 } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import {
+  ShoppingCartIcon,
+  File02Icon,
+  PackageIcon,
+  UserGroupIcon,
+  ChartIcon,
+} from '@hugeicons/core-free-icons'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 const features = [
   {
-    icon: ShoppingCart,
+    icon: ShoppingCartIcon,
     title: 'Control de ventas ilimitado',
     description:
       'Registra y gestiona todas tus ventas sin restricciones. Historial completo siempre disponible.',
   },
   {
-    icon: FileText,
+    icon: File02Icon,
     title: 'Emisión de facturas',
     description:
       '200 facturas gratuitas al mes. Necesitas más? $10 por cada 100 adicionales. Sin sorpresas.',
   },
   {
-    icon: Package,
+    icon: PackageIcon,
     title: 'Inventario sin límites',
     description:
       'Agrega todos los productos que quieras. Alertas de stock bajo incluidas.',
   },
   {
-    icon: Users,
+    icon: UserGroupIcon,
     title: 'Workspace colaborativo',
     description: 'Invita hasta 10 personas. Roles y permisos personalizables.',
   },
   {
-    icon: BarChart3,
+    icon: ChartIcon,
     title: 'Dashboards personalizables',
     description:
       'Crea tus propias vistas con las métricas que más importan para tu negocio.',
@@ -114,7 +121,8 @@ export default function Benefits() {
           {features.map((feature) => (
             <Card key={feature.title} className="border-2">
               <CardHeader>
-                <feature.icon
+                <HugeiconsIcon
+                  icon={feature.icon}
                   className="mb-2 h-8 w-8 text-primary"
                   strokeWidth={1.5}
                 />

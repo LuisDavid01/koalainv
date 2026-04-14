@@ -1,4 +1,5 @@
-import { Check } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { CheckmarkCircle01Icon } from '@hugeicons/core-free-icons'
 import { Button } from '@/components/ui/button'
 import SketchIllustration from './SketchIllustration'
 
@@ -34,7 +35,10 @@ export default function Hero() {
             <ul className="mb-8 space-y-3">
               {benefits.map((benefit) => (
                 <li key={benefit} className="flex items-center gap-3">
-                  <Check className="h-5 w-5 shrink-0 text-primary" />
+                  <HugeiconsIcon
+                    icon={CheckmarkCircle01Icon}
+                    className="h-5 w-5 shrink-0 text-primary"
+                  />
                   <span className="text-sm font-medium text-foreground">
                     {benefit}
                   </span>
@@ -51,8 +55,6 @@ export default function Hero() {
           </div>
 
           <div className="relative lg:col-span-2">
- 
-
             <div className="relative border-3 border-foreground rounded-lg bg-background p-4">
               <SketchIllustration />
             </div>
