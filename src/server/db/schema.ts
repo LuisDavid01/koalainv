@@ -84,7 +84,7 @@ export const verification = pgTable(
 	(table) => [index("verification_identifier_idx").on(table.identifier)],
 );
 
-export const organization = pgTable("organization", {
+export const organizationTable = pgTable("organizationTable", {
 	id: bigint("id", { mode: "number" })
 		.primaryKey()
 		.generatedAlwaysAsIdentity(),
@@ -93,19 +93,23 @@ export const organization = pgTable("organization", {
 	active: boolean("active").default(true).notNull(),
 })
 
+export type ORG_TYPE = typeof organizationTable.$inferSelect;
+
 export const organizationMember = pgTable("organization_member", {
 	userId: text("user_id").notNull(),
 	organizationId: bigint("organization_id", { mode: "number" })
 		.notNull()
-		.references(() => organization.id, { onDelete: "cascade" }),
+		.references(() => organizationTable.id, { onDelete: "cascade" }),
 	role: text("role").notNull(),
 	active: boolean("active").default(true).notNull(),
 }, (t) => [
 	primaryKey({ columns: [t.userId, t.organizationId] }),
 ])
 
+export type ORG_MEMBER_TYPE = typeof organizationMember.$inferSelect;
 
-export const category = pgTable("category", {
+
+export const categoryTable = pgTable("categoryTable", {
 	id: bigint("id", { mode: "number" })
 		.primaryKey()
 		.generatedAlwaysAsIdentity(),
@@ -119,21 +123,23 @@ export const category = pgTable("category", {
 		.notNull(),
 });
 
-export const product = pgTable("product", {
+export type CATEGORY_TYPE = typeof categoryTable.$inferSelect;
+
+export const productTable = pgTable("productTable", {
 	id: bigint("id", { mode: "number" })
 		.primaryKey()
 		.generatedAlwaysAsIdentity(),
 
 	organizationId: bigint("organization_id", { mode: "number" })
 		.notNull()
-		.references(() => organization.id, { onDelete: "cascade" }),
+		.references(() => organizationTable.id, { onDelete: "cascade" }),
 
 	name: text("name").notNull(),
 	description: text("description").notNull(),
 	price: bigint("price", { mode: "number" }).notNull(),
 
 	categoryId: bigint("category_id", { mode: "number" })
-		.references(() => category.id, { onDelete: "set null" }),
+		.references(() => categoryTable.id, { onDelete: "set null" }),
 	active: boolean("active").default(true).notNull(),
 
 	createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -143,21 +149,18 @@ export const product = pgTable("product", {
 		.notNull(),
 })
 
+export type PRODUCT_TYPE = typeof productTable.$inferSelect;
 
-export const inventory = pgTable("inventory", {
+
+export const inventoryTable = pgTable("inventoryTable", {
 	id: bigint("id", { mode: "number" })
 		.primaryKey()
 		.generatedAlwaysAsIdentity(),
+	name: text("name").notNull(),
 
 	organizationId: bigint("organization_id", { mode: "number" })
 		.notNull()
-		.references(() => organization.id, { onDelete: "cascade" }),
-
-	productId: bigint("product_id", { mode: "number" })
-		.notNull()
-		.references(() => product.id, { onDelete: "cascade" }),
-
-	quantity: bigint("quantity", { mode: "number" }).notNull(),
+		.references(() => organizationTable.id, { onDelete: "cascade" }),
 
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at")
@@ -165,6 +168,23 @@ export const inventory = pgTable("inventory", {
 		.$onUpdate(() => new Date())
 		.notNull(),
 })
+
+export type INVENTORY_TYPE = typeof inventoryTable.$inferSelect;
+
+export const inventoryProductTable = pgTable("inventory_product", {
+	inventoryId: bigint("inventory_id", { mode: "number" })
+		.notNull()
+		.references(() => inventoryTable.id, { onDelete: "cascade" }),
+
+	productId: bigint("product_id", { mode: "number" })
+		.notNull()
+		.references(() => productTable.id, { onDelete: "cascade" }),
+
+	quantity: bigint("quantity", { mode: "number" }).notNull(),
+}, (t) => [
+	primaryKey({ columns: [t.inventoryId, t.productId] })
+])
+
 
 
 export const userRelations = relations(user, ({ many }) => ({
@@ -185,10 +205,8 @@ export const accountRelations = relations(account, ({ one }) => ({
 		references: [user.id],
 	}),
 }));
-export const organizationRelations = relations(organization, ({ many }) => ({
+export const organizationRelations = relations(organizationTable, ({ many }) => ({
 	members: many(organizationMember),
-	products: many(product),
-	inventories: many(inventory),
 }));
 
 export const organizationMemberRelations = relations(
@@ -198,33 +216,52 @@ export const organizationMemberRelations = relations(
 			fields: [organizationMember.userId],
 			references: [user.id],
 		}),
-		organization: one(organization, {
+		organizationTable: one(organizationTable, {
 			fields: [organizationMember.organizationId],
-			references: [organization.id],
+			references: [organizationTable.id],
 		}),
 	})
 );
 
 
-export const categoryRelations = relations(category, ({ many }) => ({
-	products: many(product),
+export const categoryRelations = relations(categoryTable, ({ many }) => ({
+	productTable: many(productTable),
 }));
 
 
-export const productRelations = relations(product, ({ one, many }) => ({
-	organization: one(organization, {
-		fields: [product.organizationId],
-		references: [organization.id],
+export const productRelations = relations(productTable, ({ one, many }) => ({
+	organizationTable: one(organizationTable, {
+		fields: [productTable.organizationId],
+		references: [organizationTable.id],
 	}),
 
-	category: one(category, {
-		fields: [product.categoryId],
-		references: [category.id],
+	categoryTable: one(categoryTable, {
+		fields: [productTable.categoryId],
+		references: [categoryTable.id],
 	}),
 
-	inventory: many(inventory),
+	inventoryProductTable: many(inventoryProductTable),
 }));
 
+export const inventoryRelations = relations(inventoryTable, ({ many, one }) => ({
+	organizationTable: one(organizationTable, {
+		fields: [inventoryTable.organizationId],
+		references: [organizationTable.id],
+	}),
+	inventoryProductTable: many(inventoryProductTable),
+
+}));
+
+export const inventoryProductRelations = relations(inventoryProductTable, ({ one }) => ({
+	inventoryTable: one(inventoryTable, {
+		fields: [inventoryProductTable.inventoryId],
+		references: [inventoryTable.id],
+	}),
+	productTable: one(productTable, {
+		fields: [inventoryProductTable.productId],
+		references: [productTable.id],
+	})
+}))
 
 
 

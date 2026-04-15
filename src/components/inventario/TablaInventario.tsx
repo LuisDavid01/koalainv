@@ -44,6 +44,8 @@ import { type Producto, mockProductos } from './data'
 import { ConfirmarEliminar } from './ConfirmarEliminar'
 import { VerDetalleSheet } from './VerDetalleSheet'
 import { AgregarEditarModal } from './AgregarEditarModal'
+import { getProductos } from '@/server/actions/productos.functions'
+import { useQuery } from '@tanstack/react-query'
 
 const columnHelper = createColumnHelper<Producto>()
 
@@ -300,37 +302,28 @@ export function TablaInventario({ search, filtros }: TablaInventarioProps) {
     }),
   ]
 
-  let data = mockProductos
 
   if (search) {
-    data = data.filter(
-      (p) =>
-        p.nombre.toLowerCase().includes(search.toLowerCase()) ||
-        p.sku.toLowerCase().includes(search.toLowerCase()),
-    )
+
   }
 
   if (filtros.categoria && filtros.categoria !== 'Todos') {
-    data = data.filter((p) => p.categoria === filtros.categoria)
   }
 
   if (filtros.estadoStock && filtros.estadoStock !== 'Todos') {
-    if (filtros.estadoStock === 'En stock') {
-      data = data.filter((p) => p.stock > 10)
-    } else if (filtros.estadoStock === 'Stock bajo') {
-      data = data.filter((p) => p.stock > 0 && p.stock <= 10)
-    } else if (filtros.estadoStock === 'Sin stock') {
-      data = data.filter((p) => p.stock === 0)
-    }
+
   }
 
   if (filtros.precioMin) {
-    data = data.filter((p) => p.precio >= Number(filtros.precioMin))
   }
 
   if (filtros.precioMax) {
-    data = data.filter((p) => p.precio <= Number(filtros.precioMax))
   }
+
+  const { data } = useQuery({
+	  queryKey: ['productos'],
+	  queryFn: () => getProductos(),
+  })
 
   const table = useReactTable({
     data,
