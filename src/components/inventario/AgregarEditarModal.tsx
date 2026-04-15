@@ -1,7 +1,6 @@
-import { useState } from 'react'
-import { HugeiconsIcon } from '@hugeicons/react'
-import { ImageUploadIcon } from '@hugeicons/core-free-icons'
+'use client'
 
+import { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -12,42 +11,76 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import type { PRODUCT_TYPE } from '@/server/db/schema'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { type Producto } from './data'
+  createProducto,
+  updateProducto,
+} from '@/server/actions/productos.functions'
 
 interface AgregarEditarModalProps {
-  producto?: Producto | null
+  producto?: PRODUCT_TYPE | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  onSuccess?: () => void
 }
 
 export function AgregarEditarModal({
   producto,
   open,
   onOpenChange,
+  onSuccess,
 }: AgregarEditarModalProps) {
   const [form, setForm] = useState({
-    nombre: producto?.nombre || '',
-    sku: producto?.sku || '',
-    categoria: producto?.categoria || null,
-    marca: producto?.marca || '',
-    stock: producto?.stock?.toString() || '',
-    precio: producto?.precio?.toString() || '',
-    color: producto?.color || '',
-    descripcion: producto?.descripcion || '',
+    name: '',
+    description: '',
+    price: '',
+    categoryId: '',
   })
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const isEditing = !!producto
 
-  const handleSubmit = () => {
-    console.log('Guardar producto:', form)
-    onOpenChange(false)
+  useEffect(() => {
+    if (producto) {
+      setForm({
+        name: producto.name,
+        description: producto.description,
+        price: producto.price.toString(),
+        categoryId: producto.categoryId?.toString() || '',
+      })
+    } else {
+      setForm({
+        name: '',
+        description: '',
+        price: '',
+        categoryId: '',
+      })
+    }
+  }, [producto])
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true)
+    try {
+      const payload = {
+        name: form.name,
+        description: form.description,
+        price: Number(form.price),
+        categoryId: form.categoryId ? Number(form.categoryId) : undefined,
+      }
+
+      if (isEditing && producto) {
+        await updateProducto({ data: { id: producto.id, ...payload } })
+      } else {
+        await createProducto({ data: payload })
+      }
+
+      onSuccess?.()
+      onOpenChange(false)
+    } catch (error) {
+      console.error('Error:', error)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -61,137 +94,60 @@ export function AgregarEditarModal({
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="nombre">Nombre del producto</Label>
+            <Label htmlFor="name">Nombre del producto</Label>
             <Input
-              id="nombre"
-              value={form.nombre}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, nombre: e.target.value }))
-              }
+              id="name"
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               placeholder="Nombre del producto"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="sku">SKU</Label>
-            <Input
-              id="sku"
-              value={form.sku}
-              onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))}
-              placeholder="Autogenerado si se deja vacío"
+            <Label htmlFor="description">Descripción</Label>
+            <textarea
+              id="description"
+              value={form.description}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, description: e.target.value }))
+              }
+              placeholder="Descripción del producto"
+              className="min-h-[60px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-1"
+              rows={3}
             />
-            <span className="text-xs text-muted-foreground">
-              Dejar vacío para auto-generar
-            </span>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="categoria">Categoría</Label>
-              <Select
-                value={form.categoria || ''}
-                onValueChange={(v) => setForm((f) => ({ ...f, categoria: v }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Electrónica">Electrónica</SelectItem>
-                  <SelectItem value="Accesorios">Accesorios</SelectItem>
-                  <SelectItem value="Audio">Audio</SelectItem>
-                  <SelectItem value="Almacenamiento">Almacenamiento</SelectItem>
-                  <SelectItem value="Ropa">Ropa</SelectItem>
-                  <SelectItem value="Alimentos">Alimentos</SelectItem>
-                  <SelectItem value="Servicios">Servicios</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="marca">Marca</Label>
-              <Input
-                id="marca"
-                value={form.marca}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, marca: e.target.value }))
-                }
-                placeholder="Marca"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="stock">Stock inicial</Label>
-              <Input
-                id="stock"
-                type="number"
-                value={form.stock}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, stock: e.target.value }))
-                }
-                placeholder="0"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="precio">Precio unitario</Label>
+              <Label htmlFor="price">Precio</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                   ₡
                 </span>
                 <Input
-                  id="precio"
+                  id="price"
                   type="number"
-                  value={form.precio}
+                  value={form.price}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, precio: e.target.value }))
+                    setForm((f) => ({ ...f, price: e.target.value }))
                   }
                   placeholder="0"
                   className="pl-6"
                 />
               </div>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="color">Color</Label>
-            <Input
-              id="color"
-              value={form.color}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, color: e.target.value }))
-              }
-              placeholder="Color del producto"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="descripcion">Descripción</Label>
-            <textarea
-              id="descripcion"
-              value={form.descripcion}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, descripcion: e.target.value }))
-              }
-              placeholder="Descripción opcional..."
-              className="min-h-[60px] w-full rounded-lg border border-transparent bg-input/50 px-3 py-2 text-sm outline-none focus-visible:border-ring"
-              rows={3}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Imagen</Label>
-            <div className="flex h-24 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted p-4 text-center hover:border-primary/50">
-              <HugeiconsIcon
-                icon={ImageUploadIcon}
-                size={24}
-                strokeWidth={1.5}
-                className="text-muted-foreground"
+            <div className="space-y-2">
+              <Label htmlFor="categoryId">Categoría ID</Label>
+              <Input
+                id="categoryId"
+                type="number"
+                value={form.categoryId}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, categoryId: e.target.value }))
+                }
+                placeholder="ID de categoría"
               />
-              <span className="mt-1 text-xs text-muted-foreground">
-                Arrastra una imagen o haz click
-              </span>
             </div>
           </div>
         </div>
@@ -200,8 +156,12 @@ export function AgregarEditarModal({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button className="bg-primary" onClick={handleSubmit}>
-            Guardar Producto
+          <Button
+            className="bg-primary"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Guardando...' : isEditing ? 'Actualizar' : 'Crear'}
           </Button>
         </DialogFooter>
       </DialogContent>

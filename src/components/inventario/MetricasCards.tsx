@@ -1,6 +1,7 @@
 'use client'
 
 import { HugeiconsIcon } from '@hugeicons/react'
+import type { IconSvgElement } from '@hugeicons/react'
 import {
   PackageOpenIcon,
   AlertCircleIcon,
@@ -11,7 +12,9 @@ import {
 } from '@hugeicons/core-free-icons'
 
 import { Card } from '@/components/ui/card'
-import { mockProductos, type Metrica } from './data'
+import type { Metrica } from './data'
+import { getProductos } from '@/server/actions/productos.functions'
+import { useQuery } from '@tanstack/react-query'
 
 function MetricaCard({ metric }: { metric: Metrica }) {
   return (
@@ -21,7 +24,7 @@ function MetricaCard({ metric }: { metric: Metrica }) {
           {metric.label}
         </span>
         <HugeiconsIcon
-          icon={metric.icon}
+          icon={metric.icon as IconSvgElement}
           size={16}
           strokeWidth={1.5}
           className="text-muted-foreground"
@@ -65,27 +68,24 @@ const metricsIcons = {
 }
 
 export function MetricasCards() {
-  const totalProductos = mockProductos.length
-  const stockBajo = mockProductos.filter(
-    (p) => p.stock > 0 && p.stock <= 3,
-  ).length
-  const sinStock = mockProductos.filter((p) => p.stock === 0).length
-  const valorInventario = mockProductos.reduce(
-    (acc, p) => acc + p.stock * p.precio,
-    0,
-  )
+  const { data, isLoading } = useQuery({
+    queryKey: ['productos'],
+    queryFn: () => getProductos(),
+  })
+
+  const productos = data?.data ?? []
 
   const metrics: Metrica[] = [
     {
       label: 'Total Productos',
-      value: totalProductos.toLocaleString('es-CR'),
+      value: isLoading ? '...' : productos.length.toLocaleString('es-CR'),
       change: '+12 esta semana',
       isPositive: true,
       icon: metricsIcons.total,
     },
     {
       label: 'Stock Bajo',
-      value: stockBajo.toString(),
+      value: isLoading ? '...' : '0',
       change: 'Requieren atención',
       isPositive: false,
       variant: 'warning',
@@ -93,7 +93,7 @@ export function MetricasCards() {
     },
     {
       label: 'Sin Stock',
-      value: sinStock.toString(),
+      value: isLoading ? '...' : '0',
       change: 'Agotados',
       isPositive: false,
       variant: 'danger',
@@ -101,7 +101,11 @@ export function MetricasCards() {
     },
     {
       label: 'Valor del Inventario',
-      value: `₡${valorInventario.toLocaleString('es-CR')}`,
+      value: isLoading
+        ? '...'
+        : `₡${productos
+            .reduce((acc: number, p) => acc + p.price, 0)
+            .toLocaleString('es-CR')}`,
       change: '+3.2% vs mes anterior',
       isPositive: true,
       icon: metricsIcons.valor,

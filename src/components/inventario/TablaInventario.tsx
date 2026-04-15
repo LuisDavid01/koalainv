@@ -40,14 +40,19 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
-import { type Producto, mockProductos } from './data'
 import { ConfirmarEliminar } from './ConfirmarEliminar'
 import { VerDetalleSheet } from './VerDetalleSheet'
 import { AgregarEditarModal } from './AgregarEditarModal'
-import { getProductos } from '@/server/actions/productos.functions'
-import { useQuery } from '@tanstack/react-query'
+import {
+  getProductos,
+  deleteProducto,
+  updateProducto,
+  createProducto,
+} from '@/server/actions/productos.functions'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import type { PRODUCT_TYPE } from '@/server/db/schema'
 
-const columnHelper = createColumnHelper<Producto>()
+const columnHelper = createColumnHelper<PRODUCT_TYPE>()
 
 interface TablaInventarioProps {
   search: string
@@ -60,15 +65,33 @@ interface TablaInventarioProps {
 }
 
 export function TablaInventario({ search, filtros }: TablaInventarioProps) {
+  const queryClient = useQueryClient()
   const [sorting, setSorting] = useState<SortingState>([])
   const [rowSelection, setRowSelection] = useState({})
   const [currentPage, setCurrentPage] = useState(1)
-  const [productoVer, setProductoVer] = useState<Producto | null>(null)
-  const [productoEditar, setProductoEditar] = useState<Producto | null>(null)
-  const [productoEliminar, setProductoEliminar] = useState<Producto | null>(
+  const [productoVer, setProductoVer] = useState<PRODUCT_TYPE | null>(null)
+  const [productoEditar, setProductoEditar] = useState<PRODUCT_TYPE | null>(
+    null,
+  )
+  const [productoEliminar, setProductoEliminar] = useState<PRODUCT_TYPE | null>(
     null,
   )
   const [modalAgregarOpen, setModalAgregarOpen] = useState(false)
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['productos'],
+    queryFn: () => getProductos(),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deleteProducto({ data: { id } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['productos'] })
+      setProductoEliminar(null)
+    },
+  })
+
+  const productos = data?.data ?? []
 
   const columns = [
     columnHelper.display({
@@ -89,7 +112,7 @@ export function TablaInventario({ search, filtros }: TablaInventarioProps) {
       ),
       size: 10,
     }),
-    columnHelper.accessor('nombre', {
+    columnHelper.accessor('name', {
       header: ({ column }) => (
         <button
           className="flex items-center gap-1 text-xs font-medium uppercase text-muted-foreground"
@@ -113,116 +136,22 @@ export function TablaInventario({ search, filtros }: TablaInventarioProps) {
         <div className="flex items-center gap-3">
           <Avatar className="size-9 rounded-lg">
             <AvatarFallback className="bg-muted text-xs">
-              {row.original.nombre.charAt(0)}
+              {row.original.name.charAt(0)}
             </AvatarFallback>
           </Avatar>
           <div>
             <div className="text-sm font-medium text-foreground">
-              {row.original.nombre}
+              {row.original.name}
             </div>
             <div className="text-xs text-muted-foreground">
-              {row.original.sku}
+              {row.original.description}
             </div>
           </div>
         </div>
       ),
-      size: 200,
+      size: 250,
     }),
-    columnHelper.accessor('categoria', {
-      header: ({ column }) => (
-        <button
-          className="flex items-center gap-1 text-xs font-medium uppercase text-muted-foreground"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Categoría
-          <HugeiconsIcon
-            icon={
-              column.getIsSorted() === 'asc'
-                ? SortByDown01Icon
-                : column.getIsSorted() === 'desc'
-                  ? SortByUp01Icon
-                  : SortByDown01Icon
-            }
-            size={14}
-            strokeWidth={1.5}
-          />
-        </button>
-      ),
-      cell: ({ getValue }) => (
-        <span className="text-sm text-muted-foreground">{getValue()}</span>
-      ),
-    }),
-    columnHelper.accessor('marca', {
-      header: ({ column }) => (
-        <button
-          className="flex items-center gap-1 text-xs font-medium uppercase text-muted-foreground"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Marca
-          <HugeiconsIcon
-            icon={
-              column.getIsSorted() === 'asc'
-                ? SortByDown01Icon
-                : column.getIsSorted() === 'desc'
-                  ? SortByUp01Icon
-                  : SortByDown01Icon
-            }
-            size={14}
-            strokeWidth={1.5}
-          />
-        </button>
-      ),
-      cell: ({ getValue }) => (
-        <span className="text-sm text-muted-foreground">{getValue()}</span>
-      ),
-    }),
-    columnHelper.accessor('color', {
-      header: () => (
-        <span className="text-xs font-medium uppercase text-muted-foreground">
-          Color
-        </span>
-      ),
-      cell: ({ getValue }) => (
-        <span className="text-sm text-muted-foreground">{getValue()}</span>
-      ),
-    }),
-    columnHelper.accessor('stock', {
-      header: ({ column }) => (
-        <button
-          className="flex items-center gap-1 text-xs font-medium uppercase text-muted-foreground"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Stock
-          <HugeiconsIcon
-            icon={
-              column.getIsSorted() === 'asc'
-                ? SortByDown01Icon
-                : column.getIsSorted() === 'desc'
-                  ? SortByUp01Icon
-                  : SortByDown01Icon
-            }
-            size={14}
-            strokeWidth={1.5}
-          />
-        </button>
-      ),
-      cell: ({ getValue }) => {
-        const stock = getValue()
-        const color =
-          stock > 10
-            ? 'bg-green-400'
-            : stock >= 3
-              ? 'bg-yellow-400'
-              : 'bg-red-400'
-        return (
-          <div className="flex items-center gap-2">
-            <span className={`size-2 rounded-full ${color}`} />
-            <span className="text-sm font-medium">{stock}</span>
-          </div>
-        )
-      },
-    }),
-    columnHelper.accessor('precio', {
+    columnHelper.accessor('price', {
       header: ({ column }) => (
         <button
           className="flex items-center justify-end gap-1 text-xs font-medium uppercase text-muted-foreground"
@@ -302,31 +231,8 @@ export function TablaInventario({ search, filtros }: TablaInventarioProps) {
     }),
   ]
 
-
-  if (search) {
-
-  }
-
-  if (filtros.categoria && filtros.categoria !== 'Todos') {
-  }
-
-  if (filtros.estadoStock && filtros.estadoStock !== 'Todos') {
-
-  }
-
-  if (filtros.precioMin) {
-  }
-
-  if (filtros.precioMax) {
-  }
-
-  const { data } = useQuery({
-	  queryKey: ['productos'],
-	  queryFn: () => getProductos(),
-  })
-
   const table = useReactTable({
-    data,
+    data: productos,
     columns,
     state: {
       sorting,
@@ -338,7 +244,7 @@ export function TablaInventario({ search, filtros }: TablaInventarioProps) {
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    getRowId: (row) => row.id,
+    getRowId: (row) => row.id.toString(),
     initialState: {
       pagination: {
         pageSize: 10,
@@ -347,15 +253,15 @@ export function TablaInventario({ search, filtros }: TablaInventarioProps) {
   })
 
   const selectedCount = Object.keys(rowSelection).length
-  const totalRows = table.getFilteredRowModel().rows.length
+  const totalRows = data?.total ?? 0
   const pageIndex = table.getState().pagination.pageIndex
   const pageSize = table.getState().pagination.pageSize
-  const start = pageIndex * pageSize + 1
+  const totalPages = data?.totalPages ?? 1
+  const start = totalRows > 0 ? pageIndex * pageSize + 1 : 0
   const end = Math.min((pageIndex + 1) * pageSize, totalRows)
 
   const getPageNumbers = () => {
     const pages: (number | 'ellipsis')[] = []
-    const totalPages = Math.ceil(totalRows / pageSize)
     if (totalPages <= 5) {
       for (let i = 0; i < totalPages; i++) pages.push(i)
     } else {
@@ -376,7 +282,9 @@ export function TablaInventario({ search, filtros }: TablaInventarioProps) {
       <Card className="overflow-hidden rounded-xl border">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <span className="text-xs text-muted-foreground">
-            Mostrando {start}–{end} de {totalRows} productos
+            {isLoading
+              ? 'Cargando...'
+              : `Mostrando ${start}–${end} de ${totalRows} productos`}
           </span>
           {selectedCount > 0 && (
             <div className="flex items-center gap-2">
@@ -415,19 +323,42 @@ export function TablaInventario({ search, filtros }: TablaInventarioProps) {
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                data-state={row.getIsSelected() && 'selected'}
-                className="transition-colors hover:bg-muted/40 data-[state=selected]:bg-primary/5"
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
+            {isLoading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
+                  Cargando productos...
+                </TableCell>
               </TableRow>
-            ))}
+            ) : productos.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
+                  No hay productos
+                </TableCell>
+              </TableRow>
+            ) : (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && 'selected'}
+                  className="transition-colors hover:bg-muted/40 data-[state=selected]:bg-primary/5"
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
 
@@ -502,6 +433,8 @@ export function TablaInventario({ search, filtros }: TablaInventarioProps) {
           producto={productoEliminar}
           open={!!productoEliminar}
           onOpenChange={(open) => !open && setProductoEliminar(null)}
+          onConfirm={() => deleteMutation.mutate(productoEliminar.id)}
+          isDeleting={deleteMutation.isPending}
         />
       )}
 

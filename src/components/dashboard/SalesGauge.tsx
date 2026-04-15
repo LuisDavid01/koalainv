@@ -42,11 +42,12 @@ export function SalesGaugeWidget() {
             ₡{currentSales.toLocaleString('es-CR')}
           </span>
           <Badge className="flex items-center gap-1 bg-green-500/15 text-green-400">
-		  <HugeiconsIcon icon={ArrowUpIcon} size={12} strokeWidth={2} /> +{previousChange}%
+            <HugeiconsIcon icon={ArrowUpIcon} size={12} strokeWidth={2} /> +
+            {previousChange}%
           </Badge>
         </div>
-        <div className="relative mb-4 h-32">
-          <ResponsiveContainer width="100%" height="100%">
+        <div className="relative mb-4 min-h-[128px]">
+          <ResponsiveContainer width="100%" height={128}>
             <RadialBarChart
               innerRadius="70%"
               outerRadius="100%"

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useLocation } from '@tanstack/react-router'
+import { Link, useLocation } from '@tanstack/react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   ArrowUpIcon,
@@ -18,6 +18,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 
 import ThemeToggle from '@/components/ThemeToggle'
+import { authClient } from '@/lib/auth-client'
 
 const userData = {
   name: 'Mi Negocio',
@@ -54,15 +55,19 @@ function NavLink({
 }
 
 function SidebarContent({ isMobile = false }: { isMobile?: boolean }) {
+	const { data: session } = authClient.useSession()  
   return (
     <div className="flex h-full flex-col">
       <div className="flex flex-col gap-6 p-6">
+	  <Link to="/">
         <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-lg bg-primary/20">
+		          <div className="flex size-10 items-center justify-center rounded-lg bg-primary/20">
             <HugeiconsIcon icon={ArrowUpIcon} size={4} strokeWidth={2} />
           </div>
           <span className="font-bold text-foreground">koalaInv</span>
+		  
         </div>
+		</Link>
 
         <div className="flex items-center gap-3">
           <Avatar className="size-8">
@@ -72,7 +77,7 @@ function SidebarContent({ isMobile = false }: { isMobile?: boolean }) {
           </Avatar>
           <div className="flex flex-col">
             <span className="text-sm font-semibold text-foreground">
-              {userData.name}
+              {session?.user?.name}
             </span>
             <span className="text-xs text-muted-foreground">
               {userData.role}

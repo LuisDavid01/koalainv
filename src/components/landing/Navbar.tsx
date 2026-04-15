@@ -50,16 +50,26 @@ export default function Navbar() {
 							{link.label}
 						</Link>
 					))}
+
 				</div>
 
 				<div className="hidden md:block">
 					{session?.user?.id ? (
-						<Button
-							size="sm"
-							onClick={logout}
-						>
-							Cerrar Sesión
-						</Button>
+						<>
+							<Link
+								to="/dashboard"
+								className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+							>
+								Entrar a tu espacio
+							</Link>
+
+							<Button
+								size="sm"
+								onClick={logout}
+							>
+								Cerrar Sesión
+							</Button>
+						</>
 
 					) : (
 						<>
@@ -110,7 +120,41 @@ export default function Navbar() {
 							{link.label}
 						</Link>
 					))}
-					<Button className="w-full">Registrarse</Button>
+
+						{session?.user?.id ? (
+						<>
+							<Link
+								to="/dashboard"
+								className="text-lg text-muted-foreground hover:text-foreground"
+							>
+								Entrar a tu espacio
+							</Link>
+
+							<Button
+								size="sm"
+								onClick={logout}
+							>
+								Cerrar Sesión
+							</Button>
+						</>
+
+					) : (
+						<>
+							<Link
+								to='/register'
+							>
+								<Button size="sm">Registrarse</Button>
+
+							</Link>
+
+							<Link
+								to='/login'
+							>
+								<Button size="sm">Iniciar Sesión</Button>
+
+							</Link>
+						</>
+					)}
 				</div>
 			</div>
 		</header>

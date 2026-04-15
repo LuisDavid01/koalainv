@@ -11,41 +11,45 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
-import { type Producto } from './data'
+import { type PRODUCT_TYPE } from '@/server/db/schema'
 
 interface ConfirmarEliminarProps {
-  producto: Producto
+  producto: PRODUCT_TYPE
   open: boolean
   onOpenChange: (open: boolean) => void
+  onConfirm: () => void
+  isDeleting?: boolean
 }
 
 export function ConfirmarEliminar({
   producto,
   open,
   onOpenChange,
+  onConfirm,
+  isDeleting,
 }: ConfirmarEliminarProps) {
-  const handleEliminar = () => {
-    console.log('Eliminar producto:', producto.id)
-    onOpenChange(false)
-  }
-
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
           <AlertDialogDescription className="text-sm text-muted-foreground">
-            Esta acción es irreversible. El producto "{producto.nombre}" será
-            eliminado permanentemente del inventario.
+            El producto &quot;{producto.name}&quot; será marcado como inactivo.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>
-            <Button variant="outline">Cancelar</Button>
+            <Button variant="outline" disabled={isDeleting}>
+              Cancelar
+            </Button>
           </AlertDialogCancel>
           <AlertDialogAction>
-            <Button className="bg-destructive" onClick={handleEliminar}>
-              Eliminar
+            <Button
+              className="bg-destructive"
+              onClick={onConfirm}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Eliminando...' : 'Eliminar'}
             </Button>
           </AlertDialogAction>
         </AlertDialogFooter>
