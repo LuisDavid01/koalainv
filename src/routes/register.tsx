@@ -3,17 +3,16 @@ import { SigninForm } from '@/components/signin-form'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/register')({
-	component: RouteComponent,
+  component: RouteComponent,
 })
 
 function RouteComponent() {
-	return (
-		<>
-			<CleanNavbar />
-			<div className="flex flex-col items-center justify-center h-screen bg-background">
-				<SigninForm />
-			</div>
-		</>
-
-	)
+  return (
+    <>
+      <CleanNavbar />
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
+        <SigninForm />
+      </div>
+    </>
+  )
 }

@@ -10,13 +10,13 @@ export const Route = createFileRoute('/')({ component: IndexPage })
 
 function IndexPage() {
   return (
-    <>
+    <div className="overflow-x-hidden">
       <Navbar />
       <Ticker />
       <Hero />
       <Benefits />
       <WhyCentralized />
       <FooterLanding />
-    </>
+    </div>
   )
 }

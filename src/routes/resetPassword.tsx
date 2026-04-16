@@ -7,14 +7,12 @@ export const Route = createFileRoute('/resetPassword')({
 })
 
 function RouteComponent() {
-	return (
-		<>
-		<CleanNavbar />
-		<div className="flex flex-col items-center justify-center h-screen bg-background">
-			<ResetPasswordForm />
-		</div>
-		</>
-
-	)
-
+  return (
+    <>
+      <CleanNavbar />
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
+        <ResetPasswordForm />
+      </div>
+    </>
+  )
 }
