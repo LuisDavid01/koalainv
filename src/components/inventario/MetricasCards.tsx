@@ -1,5 +1,3 @@
-'use client'
-
 import { HugeiconsIcon } from '@hugeicons/react'
 import type { IconSvgElement } from '@hugeicons/react'
 import {
@@ -67,10 +65,14 @@ const metricsIcons = {
   valor: CoinsSwapIcon,
 }
 
-export function MetricasCards() {
+interface MetricasCardsProps {
+  inventoryId: number
+}
+
+export function MetricasCards({ inventoryId }: MetricasCardsProps) {
   const { data, isLoading } = useQuery({
-    queryKey: ['productos'],
-    queryFn: () => getProductos(),
+    queryKey: ['productos', inventoryId],
+    queryFn: () => getProductos({ data: { inventoryId } }),
   })
 
   const productos = data?.data ?? []

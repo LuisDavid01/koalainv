@@ -1,5 +1,3 @@
-'use client'
-
 import { useState } from 'react'
 import {
   createColumnHelper,
@@ -46,8 +44,6 @@ import { AgregarEditarModal } from './AgregarEditarModal'
 import {
   getProductos,
   deleteProducto,
-  updateProducto,
-  createProducto,
 } from '@/server/actions/productos.functions'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { PRODUCT_TYPE } from '@/server/db/schema'
@@ -55,6 +51,7 @@ import type { PRODUCT_TYPE } from '@/server/db/schema'
 const columnHelper = createColumnHelper<PRODUCT_TYPE>()
 
 interface TablaInventarioProps {
+  inventoryId: number
   search: string
   filtros: {
     categoria: string | null
@@ -64,7 +61,11 @@ interface TablaInventarioProps {
   }
 }
 
-export function TablaInventario({ search, filtros }: TablaInventarioProps) {
+export function TablaInventario({
+  inventoryId,
+  search,
+  filtros,
+}: TablaInventarioProps) {
   const queryClient = useQueryClient()
   const [sorting, setSorting] = useState<SortingState>([])
   const [rowSelection, setRowSelection] = useState({})
@@ -76,11 +77,18 @@ export function TablaInventario({ search, filtros }: TablaInventarioProps) {
   const [productoEliminar, setProductoEliminar] = useState<PRODUCT_TYPE | null>(
     null,
   )
-  const [modalAgregarOpen, setModalAgregarOpen] = useState(false)
 
   const { data, isLoading } = useQuery({
-    queryKey: ['productos'],
-    queryFn: () => getProductos(),
+    queryKey: ['productos', inventoryId, search, filtros],
+    queryFn: () =>
+      getProductos({
+        data: {
+          inventoryId,
+          search: search || undefined,
+          precioMin: filtros.precioMin ? Number(filtros.precioMin) : undefined,
+          precioMax: filtros.precioMax ? Number(filtros.precioMax) : undefined,
+        },
+      }),
   })
 
   const deleteMutation = useMutation({
@@ -423,6 +431,7 @@ export function TablaInventario({ search, filtros }: TablaInventarioProps) {
       {productoEditar && (
         <AgregarEditarModal
           producto={productoEditar}
+          isEditing={true}
           open={!!productoEditar}
           onOpenChange={(open) => !open && setProductoEditar(null)}
         />
@@ -437,11 +446,6 @@ export function TablaInventario({ search, filtros }: TablaInventarioProps) {
           isDeleting={deleteMutation.isPending}
         />
       )}
-
-      <AgregarEditarModal
-        open={modalAgregarOpen}
-        onOpenChange={setModalAgregarOpen}
-      />
     </>
   )
 }

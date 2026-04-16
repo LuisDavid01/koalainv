@@ -150,7 +150,7 @@ export const productTable = pgTable("productTable", {
 })
 
 export type PRODUCT_TYPE = typeof productTable.$inferSelect;
-
+export type INSERT_PRODUCT_TYPE = typeof productTable.$inferInsert;
 
 export const inventoryTable = pgTable("inventoryTable", {
 	id: bigint("id", { mode: "number" })
@@ -161,6 +161,7 @@ export const inventoryTable = pgTable("inventoryTable", {
 	organizationId: bigint("organization_id", { mode: "number" })
 		.notNull()
 		.references(() => organizationTable.id, { onDelete: "cascade" }),
+	active: boolean("active").default(true).notNull(),
 
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at")
@@ -181,6 +182,15 @@ export const inventoryProductTable = pgTable("inventory_product", {
 		.references(() => productTable.id, { onDelete: "cascade" }),
 
 	quantity: bigint("quantity", { mode: "number" }).notNull(),
+	createdAt: timestamp("created_at")
+	.notNull()
+	.defaultNow()
+	.$onUpdate(() => new Date()),
+	updatedAt: timestamp("updated_at")
+	.notNull()
+	.defaultNow()
+	.$onUpdate(() => new Date()),
+	active: boolean("active").default(true).notNull(),
 }, (t) => [
 	primaryKey({ columns: [t.inventoryId, t.productId] })
 ])

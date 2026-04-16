@@ -31,6 +31,8 @@ export function LoginForm({
 	...props
 }: React.ComponentProps<"div">) {
 
+
+
 	const form = useForm({
 		defaultValues: {
 			email: "",
@@ -47,11 +49,12 @@ export function LoginForm({
 			},
 				{
 					onSuccess: () => {
-						toast.success("Login successful")
+						toast.success("Sesión iniciada")
 					},
 					onError: (ctx) => {
 						if (ctx.error.status === 403) {
 							toast.error("Porfavor, verifique su correo")
+							return
 						}
 						toast.error(ctx.error.message)
 					},
@@ -59,6 +62,25 @@ export function LoginForm({
 				})
 		},
 	})
+
+		async function resetPasswordClient() {
+		const emailSchema = z.object({
+			email: z.email("invalid email address"),
+		})
+
+		const email = form.getFieldValue("email")
+		const validatedEmail = emailSchema.safeParse({email})
+		if (!validatedEmail.success) {
+			console.log(validatedEmail.error, email)
+			toast.error(`Porfavor, revise su correo ${validatedEmail.error.message}`)
+			return
+		}
+		await authClient.requestPasswordReset({
+			email: email,
+			redirectTo: "/resetPassword",
+		})
+		toast.success("Se ha enviado un correo para resetear la contraseña")
+	}
 	return (
 		<div className={cn("flex flex-col gap-6", className)} {...props}>
 			<Card className="overflow-hidden p-0">
@@ -114,12 +136,13 @@ export function LoginForm({
 										<Field data-invalid={isInvalid}>
 											<div className="flex items-center">
 												<FieldLabel htmlFor="password">Password</FieldLabel>
-												<a
-													href="#"
-													className="ml-auto text-sm underline-offset-2 hover:underline"
+												<Button
+												variant={"link"}
+													className="ml-auto text-sm"
+													onClick={resetPasswordClient}
 												>
 													Forgot your password?
-												</a>
+												</Button>
 											</div>
 											<Input
 												id={field.name}

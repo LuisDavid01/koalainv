@@ -1,5 +1,3 @@
-'use client'
-
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowUpIcon, ExpandIcon } from '@hugeicons/core-free-icons'
 import {
