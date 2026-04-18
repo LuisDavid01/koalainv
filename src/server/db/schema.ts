@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { pgTable, bigint, text, timestamp, boolean, index, integer, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, bigint, text, timestamp, boolean, index, integer, primaryKey, varchar } from "drizzle-orm/pg-core";
 
 
 export const auditTable = pgTable("audit", {
@@ -183,17 +183,69 @@ export const inventoryProductTable = pgTable("inventory_product", {
 
 	quantity: bigint("quantity", { mode: "number" }).notNull(),
 	createdAt: timestamp("created_at")
-	.notNull()
-	.defaultNow()
-	.$onUpdate(() => new Date()),
+		.notNull()
+		.defaultNow()
+		.$onUpdate(() => new Date()),
 	updatedAt: timestamp("updated_at")
-	.notNull()
-	.defaultNow()
-	.$onUpdate(() => new Date()),
+		.notNull()
+		.defaultNow()
+		.$onUpdate(() => new Date()),
 	active: boolean("active").default(true).notNull(),
 }, (t) => [
 	primaryKey({ columns: [t.inventoryId, t.productId] })
 ])
+
+
+export const facturaTable = pgTable("facturaTable", {
+	id: bigint("id", { mode: "number" }),
+	nombreEmisor: varchar("nombre_emisor", { length: 80 }).notNull(),
+	numCedulaEmisor: varchar("num_cedula_emisor", { length: 10 }).notNull(),
+	nombreComercialEmisor: varchar("nombre_comercial_emisor", { length: 80 }).notNull(),
+	direccionEmisor: varchar("direccion_emisor", { length: 80 }),
+	numeroAreaTelEmisor: varchar("numero_area_tel_emisor", { length: 3 }),
+	numeroTelEmisor: varchar("numero_tel_emisor", { length: 8 }),
+	numeroAreaFaxEmisor: varchar("numero_area_fax_emisor", { length: 3 }),
+	numeroFaxEmisor: varchar("numero_fax_emisor", { length: 8 }),
+	correoElectronicoEmisor: varchar("correo_electronico_emisor", { length: 60 }),
+	tipoDoc: integer("tipo_doc")
+		.notNull()
+		.references(() => tipoDocumentoTable.id, { onDelete: "cascade" }),
+	numConsecutivo: integer("num_consecutivo").notNull(),
+	fechaEmisionDoc: timestamp("fecha_emision_doc").notNull(),
+	condicionVenta: integer("condicion_venta")
+	.notNull()
+	.references(() => condicionesDeVentaTable.id, { onDelete: "cascade"}),
+	numCedulaReceptor: varchar("num_cedula_receptor", { length: 10 }),
+	identificacionReceptorExtrajero: varchar("identificacion_receptor_extrajero", { length: 10 }),
+	nombreReceptor: varchar("nombre_receptor", { length: 80 }),
+	direccionReceptor: varchar("direccion_receptor", { length: 80 }),
+	numeroAreaTelReceptor: integer("numero_area_tel_receptor"),
+	numeroTelReceptor: integer("numero_tel_receptor"),
+	numeroTelReceptorExtrajero: integer("numero_tel_receptor_extrajero"),
+	createdAt: timestamp("created_at").notNull().defaultNow().$onUpdate(() => new Date()),
+	updatedAt: timestamp("updated_at").notNull().defaultNow().$onUpdate(() => new Date()),
+})
+
+export const tipoDocumentoTable = pgTable("tipo_documento", {
+	id: bigint("id", { mode: "number" }),
+	nombre: varchar("nombre", { length: 80 }).notNull(),
+	codigo: integer("codigo").notNull(),
+	createdAt: timestamp("created_at").notNull().defaultNow().$onUpdate(() => new Date()),
+	updatedAt: timestamp("updated_at").notNull().defaultNow().$onUpdate(() => new Date()),
+	active: boolean("active").default(true).notNull(),
+})
+
+export const condicionesDeVentaTable = pgTable("condiciones_de_venta", {
+	id: bigint("id", { mode: "number" }),
+	nombre: varchar("nombre", { length: 80 }).notNull(),
+	codigo: integer("codigo").notNull(),
+	createdAt: timestamp("created_at").notNull().defaultNow().$onUpdate(() => new Date()),
+	updatedAt: timestamp("updated_at").notNull().defaultNow().$onUpdate(() => new Date()),
+	active: boolean("active").default(true).notNull(),
+})
+
+
+
 
 
 
