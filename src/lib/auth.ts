@@ -1,10 +1,20 @@
-import { db } from "@/server/db";
+import { db } from "../server/db";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { sendEmail } from "./email";
 
 export const auth = betterAuth({
+	user: {
+		additionalFields: {
+			isOnboarded: {
+				type: "boolean",
+				defaultValue: false,
+				required: false,
+				input: false,
+			},
+		},
+	},
 	emailAndPassword: {
 		enabled: true,
 		requireEmailVerification: true,

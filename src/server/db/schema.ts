@@ -12,77 +12,6 @@ export const auditTable = pgTable("audit", {
 
 })
 
-export const user = pgTable("user", {
-	id: text("id").primaryKey(),
-	name: text("name").notNull(),
-	email: text("email").notNull().unique(),
-	emailVerified: boolean("email_verified").default(false).notNull(),
-	image: text("image"),
-	createdAt: timestamp("created_at").defaultNow().notNull(),
-	updatedAt: timestamp("updated_at")
-		.defaultNow()
-		.$onUpdate(() => /* @__PURE__ */ new Date())
-		.notNull(),
-});
-
-export const session = pgTable(
-	"session",
-	{
-		id: text("id").primaryKey(),
-		expiresAt: timestamp("expires_at").notNull(),
-		token: text("token").notNull().unique(),
-		createdAt: timestamp("created_at").defaultNow().notNull(),
-		updatedAt: timestamp("updated_at")
-			.$onUpdate(() => /* @__PURE__ */ new Date())
-			.notNull(),
-		ipAddress: text("ip_address"),
-		userAgent: text("user_agent"),
-		userId: text("user_id")
-			.notNull()
-			.references(() => user.id, { onDelete: "cascade" }),
-	},
-	(table) => [index("session_userId_idx").on(table.userId)],
-);
-
-export const account = pgTable(
-	"account",
-	{
-		id: text("id").primaryKey(),
-		accountId: text("account_id").notNull(),
-		providerId: text("provider_id").notNull(),
-		userId: text("user_id")
-			.notNull()
-			.references(() => user.id, { onDelete: "cascade" }),
-		accessToken: text("access_token"),
-		refreshToken: text("refresh_token"),
-		idToken: text("id_token"),
-		accessTokenExpiresAt: timestamp("access_token_expires_at"),
-		refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
-		scope: text("scope"),
-		password: text("password"),
-		createdAt: timestamp("created_at").defaultNow().notNull(),
-		updatedAt: timestamp("updated_at")
-			.$onUpdate(() => /* @__PURE__ */ new Date())
-			.notNull(),
-	},
-	(table) => [index("account_userId_idx").on(table.userId)],
-);
-
-export const verification = pgTable(
-	"verification",
-	{
-		id: text("id").primaryKey(),
-		identifier: text("identifier").notNull(),
-		value: text("value").notNull(),
-		expiresAt: timestamp("expires_at").notNull(),
-		createdAt: timestamp("created_at").defaultNow().notNull(),
-		updatedAt: timestamp("updated_at")
-			.defaultNow()
-			.$onUpdate(() => /* @__PURE__ */ new Date())
-			.notNull(),
-	},
-	(table) => [index("verification_identifier_idx").on(table.identifier)],
-);
 
 export const organizationTable = pgTable("organizationTable", {
 	id: bigint("id", { mode: "number" })
@@ -197,7 +126,7 @@ export const inventoryProductTable = pgTable("inventory_product", {
 
 
 export const facturaTable = pgTable("facturaTable", {
-	id: bigint("id", { mode: "number" }),
+	id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
 	nombreEmisor: varchar("nombre_emisor", { length: 80 }).notNull(),
 	numCedulaEmisor: varchar("num_cedula_emisor", { length: 10 }).notNull(),
 	nombreComercialEmisor: varchar("nombre_comercial_emisor", { length: 80 }).notNull(),
@@ -227,7 +156,7 @@ export const facturaTable = pgTable("facturaTable", {
 })
 
 export const tipoDocumentoTable = pgTable("tipo_documento", {
-	id: bigint("id", { mode: "number" }),
+	id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
 	nombre: varchar("nombre", { length: 80 }).notNull(),
 	codigo: integer("codigo").notNull(),
 	createdAt: timestamp("created_at").notNull().defaultNow().$onUpdate(() => new Date()),
@@ -236,7 +165,7 @@ export const tipoDocumentoTable = pgTable("tipo_documento", {
 })
 
 export const condicionesDeVentaTable = pgTable("condiciones_de_venta", {
-	id: bigint("id", { mode: "number" }),
+	id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
 	nombre: varchar("nombre", { length: 80 }).notNull(),
 	codigo: integer("codigo").notNull(),
 	createdAt: timestamp("created_at").notNull().defaultNow().$onUpdate(() => new Date()),
@@ -245,28 +174,114 @@ export const condicionesDeVentaTable = pgTable("condiciones_de_venta", {
 })
 
 
+export const facturaRelations = relations(facturaTable, ({ one}) => ({
+	tipoDocumentoTable: one(tipoDocumentoTable, {
+		fields: [facturaTable.tipoDoc],
+		references: [tipoDocumentoTable.id],
+	}),
+	condicionesDeVentaTable: one(condicionesDeVentaTable, {
+		fields: [facturaTable.condicionVenta],
+		references: [condicionesDeVentaTable.id],
+	})
+	
+}))
 
+// BETTER-AUTH TABLES
+export const user = pgTable("user", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  emailVerified: boolean("email_verified").default(false).notNull(),
+  image: text("image"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .notNull(),
+  isOnboarded: boolean("is_onboarded").default(false),
+});
 
+export const session = pgTable(
+  "session",
+  {
+    id: text("id").primaryKey(),
+    expiresAt: timestamp("expires_at").notNull(),
+    token: text("token").notNull().unique(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+  },
+  (table) => [index("session_userId_idx").on(table.userId)],
+);
 
+export const account = pgTable(
+  "account",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    idToken: text("id_token"),
+    accessTokenExpiresAt: timestamp("access_token_expires_at"),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
+    scope: text("scope"),
+    password: text("password"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [index("account_userId_idx").on(table.userId)],
+);
+
+export const verification = pgTable(
+  "verification",
+  {
+    id: text("id").primaryKey(),
+    identifier: text("identifier").notNull(),
+    value: text("value").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [index("verification_identifier_idx").on(table.identifier)],
+);
 
 export const userRelations = relations(user, ({ many }) => ({
-	sessions: many(session),
-	accounts: many(account),
+  sessions: many(session),
+  accounts: many(account),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
-	user: one(user, {
-		fields: [session.userId],
-		references: [user.id],
-	}),
+  user: one(user, {
+    fields: [session.userId],
+    references: [user.id],
+  }),
 }));
 
 export const accountRelations = relations(account, ({ one }) => ({
-	user: one(user, {
-		fields: [account.userId],
-		references: [user.id],
-	}),
+  user: one(user, {
+    fields: [account.userId],
+    references: [user.id],
+  }),
 }));
+
+
+// APP RELATIONS
+
 export const organizationRelations = relations(organizationTable, ({ many }) => ({
 	members: many(organizationMember),
 }));
