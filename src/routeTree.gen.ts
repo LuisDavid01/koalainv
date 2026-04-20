@@ -11,13 +11,13 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/resetPassword'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PostsIndexRouteImport } from './routes/posts/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as PostsPostIdRouteImport } from './routes/posts/$postId'
-import { Route as DashboardInventariosIndexRouteImport } from './routes/dashboard/inventarios/index'
 import { Route as DashboardInventarioIndexRouteImport } from './routes/dashboard/inventario/index'
 import { Route as DashboardFacturasIndexRouteImport } from './routes/dashboard/facturas/index'
 import { Route as DashboardAuditoriaIndexRouteImport } from './routes/dashboard/auditoria/index'
@@ -31,6 +31,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -63,12 +68,6 @@ const PostsPostIdRoute = PostsPostIdRouteImport.update({
   path: '/posts/$postId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardInventariosIndexRoute =
-  DashboardInventariosIndexRouteImport.update({
-    id: '/dashboard/inventarios/',
-    path: '/dashboard/inventarios/',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const DashboardInventarioIndexRoute =
   DashboardInventarioIndexRouteImport.update({
     id: '/dashboard/inventario/',
@@ -95,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRoute
   '/register': typeof RegisterRoute
   '/resetPassword': typeof ResetPasswordRoute
   '/posts/$postId': typeof PostsPostIdRoute
@@ -104,12 +104,12 @@ export interface FileRoutesByFullPath {
   '/dashboard/auditoria/': typeof DashboardAuditoriaIndexRoute
   '/dashboard/facturas/': typeof DashboardFacturasIndexRoute
   '/dashboard/inventario/': typeof DashboardInventarioIndexRoute
-  '/dashboard/inventarios/': typeof DashboardInventariosIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRoute
   '/register': typeof RegisterRoute
   '/resetPassword': typeof ResetPasswordRoute
   '/posts/$postId': typeof PostsPostIdRoute
@@ -119,13 +119,13 @@ export interface FileRoutesByTo {
   '/dashboard/auditoria': typeof DashboardAuditoriaIndexRoute
   '/dashboard/facturas': typeof DashboardFacturasIndexRoute
   '/dashboard/inventario': typeof DashboardInventarioIndexRoute
-  '/dashboard/inventarios': typeof DashboardInventariosIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRoute
   '/register': typeof RegisterRoute
   '/resetPassword': typeof ResetPasswordRoute
   '/posts/$postId': typeof PostsPostIdRoute
@@ -135,7 +135,6 @@ export interface FileRoutesById {
   '/dashboard/auditoria/': typeof DashboardAuditoriaIndexRoute
   '/dashboard/facturas/': typeof DashboardFacturasIndexRoute
   '/dashboard/inventario/': typeof DashboardInventarioIndexRoute
-  '/dashboard/inventarios/': typeof DashboardInventariosIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -143,6 +142,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/login'
+    | '/onboarding'
     | '/register'
     | '/resetPassword'
     | '/posts/$postId'
@@ -152,12 +152,12 @@ export interface FileRouteTypes {
     | '/dashboard/auditoria/'
     | '/dashboard/facturas/'
     | '/dashboard/inventario/'
-    | '/dashboard/inventarios/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
     | '/login'
+    | '/onboarding'
     | '/register'
     | '/resetPassword'
     | '/posts/$postId'
@@ -167,12 +167,12 @@ export interface FileRouteTypes {
     | '/dashboard/auditoria'
     | '/dashboard/facturas'
     | '/dashboard/inventario'
-    | '/dashboard/inventarios'
   id:
     | '__root__'
     | '/'
     | '/about'
     | '/login'
+    | '/onboarding'
     | '/register'
     | '/resetPassword'
     | '/posts/$postId'
@@ -182,13 +182,13 @@ export interface FileRouteTypes {
     | '/dashboard/auditoria/'
     | '/dashboard/facturas/'
     | '/dashboard/inventario/'
-    | '/dashboard/inventarios/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   LoginRoute: typeof LoginRoute
+  OnboardingRoute: typeof OnboardingRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   PostsPostIdRoute: typeof PostsPostIdRoute
@@ -198,7 +198,6 @@ export interface RootRouteChildren {
   DashboardAuditoriaIndexRoute: typeof DashboardAuditoriaIndexRoute
   DashboardFacturasIndexRoute: typeof DashboardFacturasIndexRoute
   DashboardInventarioIndexRoute: typeof DashboardInventarioIndexRoute
-  DashboardInventariosIndexRoute: typeof DashboardInventariosIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -215,6 +214,13 @@ declare module '@tanstack/react-router' {
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -259,13 +265,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PostsPostIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/inventarios/': {
-      id: '/dashboard/inventarios/'
-      path: '/dashboard/inventarios'
-      fullPath: '/dashboard/inventarios/'
-      preLoaderRoute: typeof DashboardInventariosIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/dashboard/inventario/': {
       id: '/dashboard/inventario/'
       path: '/dashboard/inventario'
@@ -301,6 +300,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   LoginRoute: LoginRoute,
+  OnboardingRoute: OnboardingRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   PostsPostIdRoute: PostsPostIdRoute,
@@ -310,7 +310,6 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardAuditoriaIndexRoute: DashboardAuditoriaIndexRoute,
   DashboardFacturasIndexRoute: DashboardFacturasIndexRoute,
   DashboardInventarioIndexRoute: DashboardInventarioIndexRoute,
-  DashboardInventariosIndexRoute: DashboardInventariosIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

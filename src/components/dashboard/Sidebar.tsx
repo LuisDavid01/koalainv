@@ -17,6 +17,8 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 
 import ThemeToggle from '@/components/ThemeToggle'
 import { authClient } from '@/lib/auth-client'
+import { useQuery } from '@tanstack/react-query'
+import { getUserOrg } from '@/server/actions/organization.functions'
 
 const userData = {
   name: 'Mi Negocio',
@@ -54,6 +56,14 @@ function NavLink({
 
 function SidebarContent({ isMobile = false }: { isMobile?: boolean }) {
 	const { data: session } = authClient.useSession()  
+	const { data, isLoading } = useQuery({
+		queryKey: ['user-org'],
+		queryFn: () => {
+			const userOrg = getUserOrg()
+			return userOrg
+		},
+	})
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex flex-col gap-6 p-6">
@@ -78,14 +88,11 @@ function SidebarContent({ isMobile = false }: { isMobile?: boolean }) {
               {session?.user?.name}
             </span>
             <span className="text-xs text-muted-foreground">
-              {userData.role}
+			{ isLoading ? "cargando..." : `${data?.organizationName} ${data?.role}`}
             </span>
           </div>
           <div className="ml-auto flex items-center gap-1">
             <ThemeToggle />
-            <Button variant="ghost" size="icon-xs">
-              <HugeiconsIcon icon={Settings01Icon} size={4} strokeWidth={2} />
-            </Button>
           </div>
         </div>
       </div>

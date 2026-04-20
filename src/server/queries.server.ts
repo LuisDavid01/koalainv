@@ -1,198 +1,192 @@
-import { eq, like, and, gte, lte, sql, desc, asc } from 'drizzle-orm'
+import { eq, like, and, gte, lte, sql, desc, asc, ilike } from 'drizzle-orm'
 import { db } from './db'
 import {
-  inventoryTable,
-  productTable,
-  inventoryProductTable,
+	inventoryTable,
+	productTable,
+	inventoryProductTable,
+	categoryTable,
+	organizationMember,
+	organizationTable,
 } from './db/schema'
 import type { INVENTORY_TYPE, PRODUCT_TYPE } from './db/schema'
+import { auth } from '@/lib/auth'
+import {
+	getRequest,
+	getRequestHeader,
+} from '@tanstack/react-start/server'
+
+export type ProductoWithStock = {
+	id: number
+	name: string
+	price: number
+	description: string
+	active: boolean
+	inventoryId: number
+	stock: number
+	categoryId: number
+	categoryName?: string
+	organizationId?: number
+	organizationName?: string
+	createdAt?: string
+	updatedAt?: string
+}
 
 export type ProductoFilters = {
-  inventoryId?: number
-  page?: number
-  limit?: number
-  search?: string
-  categoria?: string
-  estadoStock?: string
-  precioMin?: number
-  precioMax?: number
-  sortBy?: string
-  sortOrder?: 'asc' | 'desc'
+	inventoryId?: number
+	page?: number
+	limit?: number
+	search?: string
+	categoria?: string
+	estadoStock?: string
+	precioMin?: number
+	precioMax?: number
+	sortBy?: string
+	sortOrder?: 'asc' | 'desc'
 }
 
-export type PaginatedResult<T> = {
-  data: T[]
-  total: number
-  page: number
-  totalPages: number
-}
+
 
 export const QUERIES = {
-  getProductos: async function (
-    filters: ProductoFilters = {},
-  ): Promise<PaginatedResult<PRODUCT_TYPE>> {
-    const {
-      inventoryId,
-      page = 1,
-      limit = 10,
-      search,
-      estadoStock,
-      precioMin,
-      precioMax,
-      sortOrder = 'desc',
-    } = filters
+	getProductosByInventoryId:
+		async function(filters: ProductoFilters = {}) {
+			try {
+				const {
+					inventoryId,
+					page = 1,
+					limit = 10,
+					search,
+					categoria,
+					estadoStock,
+					precioMin,
+					precioMax,
+					sortOrder = 'desc',
+				} = filters
 
-    const baseConditions = [eq(productTable.active, true)]
+				const baseConditions: any[] = []
 
-    if (search) {
-      baseConditions.push(like(productTable.name, `%${search}%`))
-    }
+				if (inventoryId) {
+					baseConditions.push(eq(inventoryProductTable.inventoryId, inventoryId))
+				}
 
-    if (precioMin !== undefined) {
-      baseConditions.push(gte(productTable.price, precioMin))
-    }
+				if (search) {
+					baseConditions.push(ilike(productTable.name, `%${search}%`))
+				}
 
-    if (precioMax !== undefined) {
-      baseConditions.push(lte(productTable.price, precioMax))
-    }
 
-    const offset = (page - 1) * limit
+				if (estadoStock) {
+					if (estadoStock === 'Sin stock') {
+						baseConditions.push(eq(inventoryProductTable.quantity, 0))
+					} else if (estadoStock === 'Stock bajo') {
+						baseConditions.push(and(
+							gte(inventoryProductTable.quantity, 1),
+							lte(inventoryProductTable.quantity, 10)
+						))
+					} else if (estadoStock === 'En stock') {
+						baseConditions.push(gte(inventoryProductTable.quantity, 11))
+					}
+				}
 
-    let total: number = 0
+				if (precioMin !== undefined) {
+					baseConditions.push(gte(productTable.price, precioMin))
+				}
 
-    if (inventoryId) {
-      const [countResult] = await db
-        .select({ count: sql<number>`count(*)` })
-        .from(productTable)
-        .innerJoin(
-          inventoryProductTable,
-          eq(inventoryProductTable.productId, productTable.id),
-        )
-        .where(
-          and(
-            ...baseConditions,
-            eq(inventoryProductTable.inventoryId, inventoryId),
-          ),
-        )
+				if (precioMax !== undefined) {
+					baseConditions.push(lte(productTable.price, precioMax))
+				}
 
-      total = countResult?.count ?? 0
-    } else {
-      const [countResult] = await db
-        .select({ count: sql<number>`count(*)` })
-        .from(productTable)
-        .where(and(...baseConditions))
+				const offset = (page - 1) * limit
 
-      total = countResult?.count ?? 0
-    }
+				let total: number = 0
 
-    const totalPages = Math.ceil(total / limit)
+				const [countResult] = await db
+					.select({ count: sql<number>`count(*)` })
+					.from(inventoryProductTable)
+					.innerJoin(productTable, eq(inventoryProductTable.productId, productTable.id))
+					.innerJoin(categoryTable, eq(productTable.categoryId, categoryTable.id))
+					.where(and(...baseConditions))
 
-    let productos
+				total = countResult?.count ?? 0
 
-    if (inventoryId) {
-      if (sortOrder === 'asc') {
-        productos = await db
-          .select({
-            id: productTable.id,
-            organizationId: productTable.organizationId,
-            name: productTable.name,
-            description: productTable.description,
-            price: productTable.price,
-            categoryId: productTable.categoryId,
-            active: productTable.active,
-            createdAt: productTable.createdAt,
-            updatedAt: productTable.updatedAt,
-          })
-          .from(productTable)
-          .innerJoin(
-            inventoryProductTable,
-            eq(inventoryProductTable.productId, productTable.id),
-          )
-          .where(
-            and(
-              ...baseConditions,
-              eq(inventoryProductTable.inventoryId, inventoryId),
-            ),
-          )
-          .orderBy(asc(productTable.id))
-          .limit(limit)
-          .offset(offset)
-      } else {
-        productos = await db
-          .select({
-            id: productTable.id,
-            organizationId: productTable.organizationId,
-            name: productTable.name,
-            description: productTable.description,
-            price: productTable.price,
-            categoryId: productTable.categoryId,
-            active: productTable.active,
-            createdAt: productTable.createdAt,
-            updatedAt: productTable.updatedAt,
-          })
-          .from(productTable)
-          .innerJoin(
-            inventoryProductTable,
-            eq(inventoryProductTable.productId, productTable.id),
-          )
-          .where(
-            and(
-              ...baseConditions,
-              eq(inventoryProductTable.inventoryId, inventoryId),
-            ),
-          )
-          .orderBy(desc(productTable.id))
-          .limit(limit)
-          .offset(offset)
-      }
-    } else {
-      if (sortOrder === 'asc') {
-        productos = await db
-          .select()
-          .from(productTable)
-          .where(and(...baseConditions))
-          .orderBy(asc(productTable.id))
-          .limit(limit)
-          .offset(offset)
-      } else {
-        productos = await db
-          .select()
-          .from(productTable)
-          .where(and(...baseConditions))
-          .orderBy(desc(productTable.id))
-          .limit(limit)
-          .offset(offset)
-      }
-    }
+				const productos = await db
+					.select({
+						id: productTable.id,
+						name: productTable.name,
+						price: productTable.price,
+						description: productTable.description,
+						active: productTable.active,
+						inventoryId: inventoryTable.id,
+						stock: inventoryProductTable.quantity,
+						categoryId: categoryTable.id,
+						categoryName: categoryTable.name,
+					})
+					.from(productTable)
+					.innerJoin(inventoryProductTable, eq(inventoryProductTable.productId, productTable.id))
+					.innerJoin(inventoryTable, eq(inventoryTable.id, inventoryProductTable.inventoryId))
+					.innerJoin(categoryTable, eq(productTable.categoryId, categoryTable.id))
+					.where(and(...baseConditions))
+					.offset(offset)
+					.limit(limit)
 
-    return {
-      data: productos,
-      total,
-      page,
-      totalPages,
-    }
-  },
+				const totalPages = Math.ceil(total / limit)
 
-  getProductoById: async function (id: number): Promise<PRODUCT_TYPE | null> {
-    const [producto] = await db
-      .select()
-      .from(productTable)
-      .where(and(eq(productTable.id, id), eq(productTable.active, true)))
+				return {
+					data: productos,
+					total,
+					page,
+					limit,
+					totalPages,
+				}
+			} catch (error) {
+				throw new Error(error as string)
+			}
+		},
 
-    return producto ?? null
-  },
+	getProductoById: async function(id: number): Promise<PRODUCT_TYPE | null> {
+		const [producto] = await db
+			.select()
+			.from(productTable)
+			.where(and(eq(productTable.id, id), eq(productTable.active, true)))
 
-  getInventarioByOrgId: async function (id: number): Promise<INVENTORY_TYPE[]> {
-    const inventory = await db
-      .select()
-      .from(inventoryTable)
-      .where(
-        and(
-          eq(inventoryTable.organizationId, id),
-          eq(inventoryTable.active, true),
-        ),
-      )
+		return producto ?? null
+	},
 
-    return inventory ?? []
-  },
+	getInventarioByOrgId: async function(id: number): Promise<INVENTORY_TYPE[]> {
+		const inventory = await db
+			.select()
+			.from(inventoryTable)
+			.where(
+				and(
+					eq(inventoryTable.organizationId, id),
+					eq(inventoryTable.active, true),
+				),
+			)
+
+		return inventory ?? []
+	},
+	getUserOrg: async function() {
+		const request = getRequest()
+
+		const user = await auth.api.getSession({
+			headers: request.headers,
+		})
+
+		if (!user?.session.id) {
+			throw new Error('No session found')
+		}
+
+		const [result] = await db
+			.select({
+				organizationId: organizationTable.id,
+				organizationName: organizationTable.name,
+				role: organizationMember.role,
+			})
+			.from(organizationMember)
+			.innerJoin(organizationTable, eq(organizationMember.organizationId, organizationTable.id))
+			.where(eq(organizationMember.userId, user?.user.id))
+
+		console.log(result)
+
+		return result
+
+	}
 }

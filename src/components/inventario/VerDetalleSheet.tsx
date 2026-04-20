@@ -6,10 +6,10 @@ import {
 } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { type PRODUCT_TYPE } from '@/server/db/schema'
+import type { ProductoWithStock } from '@/server/queries.server'
 
 interface VerDetalleSheetProps {
-  producto: PRODUCT_TYPE
+  producto: ProductoWithStock
   open: boolean
   onOpenChange: (open: boolean) => void
   onEditar: () => void
@@ -49,9 +49,9 @@ export function VerDetalleSheet({
               </div>
             </div>
             <div>
-              <div className="text-xs text-muted-foreground">Categoría ID</div>
+              <div className="text-xs text-muted-foreground">Categoría</div>
               <div className="text-sm font-semibold">
-                {producto.categoryId ?? 'N/A'}
+                {producto.categoryName ?? 'N/A'}
               </div>
             </div>
           </div>

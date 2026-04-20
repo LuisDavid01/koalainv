@@ -1,16 +1,24 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { PlusSignIcon } from '@hugeicons/core-free-icons'
+import { PlusSignIcon, AddIcon, ArrowDown01Icon } from '@hugeicons/core-free-icons'
 import { Sidebar } from '@/components/dashboard/Sidebar'
 import { Button } from '@/components/ui/button'
 import { MetricasCards } from '@/components/inventario/MetricasCards'
 import { BarraAcciones } from '@/components/inventario/BarraAcciones'
 import { TablaInventario } from '@/components/inventario/TablaInventario'
 import { AgregarEditarModal } from '@/components/inventario/AgregarEditarModal'
-import { useQuery } from '@tanstack/react-query'
+import { CrearInventarioModal } from '@/components/inventario/CrearInventarioModal'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getInventarios } from '@/server/actions/inventarios.functions'
 import type { INVENTORY_TYPE } from '@/server/db/schema'
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
 	Select,
 	SelectContent,
@@ -31,6 +39,7 @@ export const Route = createFileRoute('/dashboard/inventario/')({
 })
 
 function RouteComponent() {
+	const queryClient = useQueryClient()
 	const [search, setSearch] = useState('')
 	const [filtros, setFiltros] = useState<Filtros>({
 		categoria: 'Todos',
@@ -39,12 +48,17 @@ function RouteComponent() {
 		precioMax: '',
 	})
 	const [modalAgregarOpen, setModalAgregarOpen] = useState(false)
+	const [modalCrearInventarioOpen, setModalCrearInventarioOpen] = useState(false)
 	const [inventarioId, setInventarioId] = useState(1)
 
 	const { data, isLoading } = useQuery<INVENTORY_TYPE[]>({
-		queryKey: ['inventarios', inventarioId],
-		queryFn: () => getInventarios({ data: { id: inventarioId } }),
+		queryKey: ['inventarios'],
+		queryFn: () => getInventarios({ data: { id: 1 } }),
 	})
+
+	const handleCrearInventario = () => {
+		queryClient.invalidateQueries({ queryKey: ['inventarios'] })
+	}
 
 	return (
 		<div className="min-h-screen bg-background">
@@ -58,30 +72,49 @@ function RouteComponent() {
 						) : data && data.length > 0 ? (
 							<div className="flex items-center gap-2">
 								<span className="text-sm font-medium">Inventario:</span>
-								<Select
-									value={String(inventarioId)}
-									onValueChange={(v) => setInventarioId(Number(v))}
-								>
-									<SelectTrigger className="min-w-[120px]">
-										<SelectValue>
-											{data.find((inv) => inv.id === inventarioId)?.name ?? "Seleccionar"}
-										</SelectValue>
-									</SelectTrigger>
-
-									<SelectContent>
-										{data.map((inv) => (
-											<SelectItem key={inv.id} value={String(inv.id)}>
-												{inv.name}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-
+								<DropdownMenu>
+									<DropdownMenuTrigger className="min-w-[120px] inline-flex items-center justify-between gap-2" >
+										{data.find((inv) => inv.id === inventarioId)?.name ?? 'Seleccionar'}
+										<HugeiconsIcon icon={ArrowDown01Icon} size={14} className="ml-2" />
+									</DropdownMenuTrigger>
+									<DropdownMenuContent align="start" className="w-[200px]">
+										<div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+											Seleccionar inventario
+										</div>
+										<Select
+											value={String(inventarioId)}
+											onValueChange={(v) => setInventarioId(Number(v))}
+										>
+											<SelectTrigger className="border-0 bg-transparent shadow-none focus:ring-0">
+												<SelectValue />
+											</SelectTrigger>
+											<SelectContent>
+												{data.map((inv) => (
+													<SelectItem key={inv.id} value={String(inv.id)}>
+														{inv.name}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+										<DropdownMenuSeparator />
+										<DropdownMenuItem
+											onClick={() => setModalCrearInventarioOpen(true)}
+											className="cursor-pointer"
+										>
+											<HugeiconsIcon icon={AddIcon} size={14} className="mr-2" />
+											Crear nuevo inventario
+										</DropdownMenuItem>
+									</DropdownMenuContent>
+								</DropdownMenu>
 							</div>
 						) : (
-							<span className="text-sm text-muted-foreground">
-								No hay inventarios disponibles
-							</span>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => setModalCrearInventarioOpen(true)}
+							>
+								Crear inventario
+							</Button>
 						)}
 					</div>
 
@@ -103,7 +136,6 @@ function RouteComponent() {
 				</header>
 
 				<main className="p-6 space-y-4">
-					<MetricasCards inventoryId={inventarioId} />
 
 					<BarraAcciones
 						search={search}
@@ -119,8 +151,15 @@ function RouteComponent() {
 					/>
 
 					<AgregarEditarModal
+						idInvetario={inventarioId}
 						open={modalAgregarOpen}
 						onOpenChange={setModalAgregarOpen}
+					/>
+
+					<CrearInventarioModal
+						open={modalCrearInventarioOpen}
+						onOpenChange={setModalCrearInventarioOpen}
+						onSuccess={handleCrearInventario}
 					/>
 				</main>
 			</div>

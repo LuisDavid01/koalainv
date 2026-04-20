@@ -3,13 +3,18 @@ import { auth } from "./auth";
 import { redirect } from "@tanstack/react-router";
 
 export const authMiddleware = createMiddleware()
-  .server(async ({next, request}) => {
-	  const session = await auth.api.getSession({headers: request.headers});
+	.server(async ({ next, request }) => {
+		const session = await auth.api.getSession({ headers: request.headers });
 
-	  if (!session) {
-		  throw(redirect({to: "/login"}));
-	  }
-	  
-	  const response = await next();
-	  return response;
-  })
+		if (!session) {
+			throw (redirect({ to: "/login" }));
+		}
+
+		if (!session.user.isOnboarded) {
+			console.log("User is not onboarded");
+			throw (redirect({ to: "/onboarding" }));
+		}
+
+		const response = await next();
+		return response;
+	})

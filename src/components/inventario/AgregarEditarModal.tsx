@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import type { PRODUCT_TYPE } from '@/server/db/schema'
+import type { ProductoWithStock } from '@/server/queries.server'
 import {
 	createProducto,
 	updateProducto,
@@ -17,9 +18,11 @@ import {
 import { z } from 'zod'
 import { useForm } from '@tanstack/react-form'
 import { Field, FieldError, FieldGroup, FieldLabel } from '../ui/field'
+import { Textarea } from '../ui/textarea'
 
 interface AgregarEditarModalProps {
-	producto?: PRODUCT_TYPE | null
+	data?: ProductoWithStock | null
+	idInvetario: number
 	isEditing?: boolean
 	open: boolean
 	onOpenChange: (open: boolean) => void
@@ -28,15 +31,19 @@ interface AgregarEditarModalProps {
 
 const formSchema = z.object({
 	id: z.number().min(0),
-	name: z.string().min(1),
-	description: z.string().min(1),
-	price: z.number().min(1),
-	categoryId: z.number().min(1),
-	organizationId: z.number().min(1),
+	name: z.string().min(1, 'El nombre es requerido'),
+	description: z.string().min(1, 'La descripción es requerida'),
+	price: z.number().min(1, 'El precio es requerido'),
+	categoryId: z.number().min(1, 'La categoría es requerida'),
+	organizationId: z.number().min(1, 'El id de la organización es requerido'),
+	stock: z.number().min(1, 'El stock es requerido'),
+	inventoryId: z.number().min(1, 'El id de la inventario es requerido'),
+	active: z.boolean(),
 })
 
 export function AgregarEditarModal({
-	producto,
+	data,
+	idInvetario,
 	isEditing = false,
 	open,
 	onOpenChange,
@@ -45,20 +52,23 @@ export function AgregarEditarModal({
 
 	const form = useForm({
 		defaultValues: {
-			id: producto?.id ?? 0,
+			id: data?.id ?? 0,
 			organizationId: 1,
-			name: producto?.name ?? "",
-			description: producto?.description ?? "",
-			price: producto?.price ?? 100,
-			categoryId: producto?.categoryId ?? 1,
+			name: data?.name ?? "",
+			description: data?.description ?? "",
+			price: data?.price ?? 100,
+			categoryId: data?.categoryId ?? 1,
+			stock: data?.stock ?? 1,
+			inventoryId: idInvetario,
+			active: data?.active ?? true,
 		},
 		validators: {
 			onSubmit: formSchema,
 		},
 		onSubmit: async ({ value }) => {
-			isEditing ? await updateProducto({ data: value }) :
+			isEditing ? await updateProducto({ data: { id: value.id, product: value } }) :
 				await createProducto({ data: value })
-		},
+		} ,
 	})
 
 
@@ -99,8 +109,9 @@ export function AgregarEditarModal({
 												value={field.state.value}
 												onBlur={field.handleBlur}
 												onChange={(e) => field.handleChange(e.target.value)}
-												placeholder="m@example.com"
+												placeholder="Nombre del producto"
 												className=""
+												autoComplete='off'
 												aria-invalid={isInvalid}
 											/>
 											{isInvalid && (
@@ -120,14 +131,14 @@ export function AgregarEditarModal({
 										field.state.meta.isTouched && !field.state.meta.isValid
 									return (
 										<Field data-invalid={isInvalid}>
-											<FieldLabel htmlFor={field.name}>Nombre</FieldLabel>
-											<Input
+											<FieldLabel htmlFor={field.name}>Descripción</FieldLabel>
+											<Textarea
 												id={field.name}
 												name={field.name}
 												value={field.state.value}
 												onBlur={field.handleBlur}
 												onChange={(e) => field.handleChange(e.target.value)}
-												placeholder="m@example.com"
+												placeholder="Descripción del producto"
 												className=""
 												aria-invalid={isInvalid}
 											/>
@@ -150,7 +161,7 @@ export function AgregarEditarModal({
 										field.state.meta.isTouched && !field.state.meta.isValid
 									return (
 										<Field data-invalid={isInvalid}>
-											<FieldLabel htmlFor={field.name}>Nombre</FieldLabel>
+											<FieldLabel htmlFor={field.name}>Precio</FieldLabel>
 											<Input
 												id={field.name}
 												name={field.name}
@@ -179,15 +190,17 @@ export function AgregarEditarModal({
 										field.state.meta.isTouched && !field.state.meta.isValid
 									return (
 										<Field data-invalid={isInvalid}>
-											<FieldLabel htmlFor={field.name}>Nombre</FieldLabel>
+											<FieldLabel htmlFor={field.name}>Categoría</FieldLabel>
 											<Input
 												id={field.name}
 												name={field.name}
 												value={field.state.value}
 												onBlur={field.handleBlur}
 												onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+												defaultValue={field.state.value}
 												placeholder="1"
 												className=""
+												type='number'
 												aria-invalid={isInvalid}
 											/>
 											{isInvalid && (
@@ -197,10 +210,42 @@ export function AgregarEditarModal({
 									)
 								}}
 							/>
+
+							<div className="space-y-2">
+							<form.Field
+								name="stock"
+								children={(field) => {
+									const isInvalid =
+										field.state.meta.isTouched && !field.state.meta.isValid
+									return (
+										<Field data-invalid={isInvalid}>
+											<FieldLabel htmlFor={field.name}>Cantidad de Inventario</FieldLabel>
+											<Input
+												id={field.name}
+												name={field.name}
+												value={field.state.value}
+												onBlur={field.handleBlur}
+												onChange={(e) => field.handleChange(e.target.valueAsNumber)}
+												placeholder="10"
+												defaultValue={field.state.value}
+												className=""
+												aria-invalid={isInvalid}
+												type='number'
+											/>
+											{isInvalid && (
+												<FieldError errors={field.state.meta.errors} />
+											)}
+										</Field>
+									)
+								}}
+							/>
+						</div>
+
 						</div>
 					</FieldGroup>
 
-					<DialogFooter>
+					<DialogFooter >
+					<div className=' mt-4'>
 						<Button variant="outline" onClick={() => onOpenChange(false)}>
 							Cancelar
 						</Button>
@@ -210,6 +255,7 @@ export function AgregarEditarModal({
 						>
 							{isEditing ? 'Actualizar' : 'Crear'}
 						</Button>
+					</div>
 
 					</DialogFooter>
 				</form>
