@@ -1,7 +1,11 @@
 import { and, eq } from 'drizzle-orm'
 import { db } from './db'
-import { inventoryProductTable, inventoryTable, productTable, type INSERT_PRODUCT_TYPE, type PRODUCT_TYPE, type INVENTORY_TYPE } from './db/schema'
+import { inventoryProductTable, inventoryTable, productTable, type INSERT_PRODUCT_TYPE, type PRODUCT_TYPE, type INVENTORY_TYPE, organizationTable, organizationMember, user } from './db/schema'
 import type { ProductoWithStock } from './queries.server'
+import { auth } from '@/lib/auth'
+import {
+	getRequest,
+} from '@tanstack/react-start/server'
 
 export const MUTATIONS = {
 	createInventario: async function(name: string, organizationId: number): Promise<INVENTORY_TYPE> {
@@ -92,5 +96,40 @@ export const MUTATIONS = {
 					eq(inventoryProductTable.inventoryId, idInventario)))
 			.returning()
 		return !!producto
+	},
+
+	createOrganization: async function(name: string) {
+		const req = getRequest() 
+		const currUser = await auth.api.getSession({ headers: req.headers })
+
+		if (!currUser?.session.id) {
+			throw new Error('No session found')
+		}
+
+
+		const result = await db
+			.insert(organizationTable)
+			.values({
+				name,
+				active: true,
+			})
+			.returning()
+		await db
+		.insert(organizationMember)
+		.values({
+			organizationId: result[0].id,
+			userId: currUser?.user.id,
+			role: 'owner',
+			active: true,
+		})
+		console.log("organizacion creada ", name)
+
+		await db.update(user)
+		.set({
+			isOnboarded: true,
+		})
+		.where(eq(user.id, currUser?.user.id))
+		console.log("current user onboarded")
+		return true
 	},
 }

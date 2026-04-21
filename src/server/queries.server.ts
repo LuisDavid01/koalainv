@@ -12,7 +12,6 @@ import type { INVENTORY_TYPE, PRODUCT_TYPE } from './db/schema'
 import { auth } from '@/lib/auth'
 import {
 	getRequest,
-	getRequestHeader,
 } from '@tanstack/react-start/server'
 
 export type ProductoWithStock = {
