@@ -1,6 +1,7 @@
 import { useState, useReducer } from 'react'
 import { cn } from '@/lib/utils'
 import { useForm } from '@tanstack/react-form'
+import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import {
 	Field,
@@ -14,6 +15,7 @@ import * as z from 'zod'
 import { toast } from 'sonner'
 import { Link } from '@tanstack/react-router'
 import { createUserOrganization } from '@/server/actions/organization.functions'
+import { useOrganization } from '@/contexts/OrganizationContext'
 
 type Stage = 'organization' | 'payment' | 'welcome'
 type StageState = { stage: Stage; orgName: string }
@@ -76,6 +78,9 @@ export function OwnerFlow() {
 	}
 
 	if (state.stage === 'payment') {
+		const { setCurrentOrganization } = useOrganization()
+		const queryClient = useQueryClient()
+
 		return (
 			<div className="w-full max-w-sm space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
 				<OnboardingStepper currentStep={currentStep} />
@@ -104,11 +109,16 @@ export function OwnerFlow() {
 					className="w-full"
 					onClick={async () => {
 						await createUserOrganization({ data: { name: state.orgName } })
-						toast.info('Redirigiendo a pasarela de pago...')
+						await queryClient.invalidateQueries({ queryKey: ['user-organizations'] })
+						const orgs = queryClient.getQueryData<any[]>(['user-organizations'])
+						if (orgs && orgs.length > 0) {
+							setCurrentOrganization(orgs[0].organizationId)
+						}
+						toast.info('Redirigiendo...')
 						dispatch({ type: 'NEXT' })
 					}}
 				>
-					Realizar Pago
+					Continuar
 				</Button>
 
 				<p className="text-xs text-muted-foreground text-center">

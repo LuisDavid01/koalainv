@@ -6,9 +6,12 @@ import { auth } from '@/lib/auth'
 import {
 	getRequest,
 } from '@tanstack/react-start/server'
+import { isCurrentUserOrgMember } from './roles.server'
 
 export const MUTATIONS = {
 	createInventario: async function(name: string, organizationId: number): Promise<INVENTORY_TYPE> {
+
+
 		const [inventario] = await db
 			.insert(inventoryTable)
 			.values({
@@ -20,12 +23,14 @@ export const MUTATIONS = {
 		return inventario
 	},
 
-	createProducto: async function(data: ProductoWithStock) {
+	createProducto: async function(data: ProductoWithStock & { organizationId: number }) {
 		try {
+
+
 			const [producto] = await db
 				.insert(productTable)
 				.values({
-					organizationId: 1,
+					organizationId: data.organizationId,
 					name: data.name,
 					description: data.description,
 					price: data.price,
@@ -36,14 +41,14 @@ export const MUTATIONS = {
 			console.log("id del producto", producto.id)
 			console.log("id del inventario", data.inventoryId)
 
-			const [inventoryProduct] = await db
+			await db
 				.insert(inventoryProductTable)
 				.values({
 					inventoryId: data.inventoryId,
 					productId: producto.id,
 					quantity: data.stock,
 				}).returning()
-			return inventoryProduct
+			return true
 		} catch (error) {
 			console.log(error)
 			throw new Error(error as string)
@@ -52,8 +57,10 @@ export const MUTATIONS = {
 
 	updateProducto: async function(
 		id: number,
-		data: ProductoWithStock,
+		data: ProductoWithStock & { organizationId: number },
 	) {
+
+
 		const updateData: Record<string, unknown> = {}
 		if (data.name) updateData.name = data.name
 		if (data.description) updateData.description = data.description
@@ -85,6 +92,14 @@ export const MUTATIONS = {
 	},
 
 	softDeleteProductoInInventory: async function(idProducto: number, idInventario: number) {
+		try {
+		const [inventory] = await db
+			.select({ organizationId: inventoryTable.organizationId })
+			.from(inventoryTable)
+			.where(eq(inventoryTable.id, idInventario))
+		
+
+
 		console.log("idProducto", idProducto)
 		console.log("idInventario", idInventario)
 		const [producto] = await db
@@ -96,6 +111,10 @@ export const MUTATIONS = {
 					eq(inventoryProductTable.inventoryId, idInventario)))
 			.returning()
 		return !!producto
+		} catch (error) {
+			console.log(error)
+			throw new Error(error as string)
+		}
 	},
 
 	createOrganization: async function(name: string) {

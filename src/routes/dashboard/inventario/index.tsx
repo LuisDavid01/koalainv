@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { PlusSignIcon, AddIcon, ArrowDown01Icon } from '@hugeicons/core-free-icons'
 import { Sidebar } from '@/components/dashboard/Sidebar'
@@ -9,6 +9,7 @@ import { BarraAcciones } from '@/components/inventario/BarraAcciones'
 import { TablaInventario } from '@/components/inventario/TablaInventario'
 import { AgregarEditarModal } from '@/components/inventario/AgregarEditarModal'
 import { CrearInventarioModal } from '@/components/inventario/CrearInventarioModal'
+import { SinInventarios } from '@/components/inventario/SinInventarios'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getInventarios } from '@/server/actions/inventarios.functions'
 import type { INVENTORY_TYPE } from '@/server/db/schema'
@@ -26,6 +27,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select'
+import { useOrganization } from '@/contexts/OrganizationContext'
 
 interface Filtros {
 	categoria: string | null
@@ -49,16 +51,32 @@ function RouteComponent() {
 	})
 	const [modalAgregarOpen, setModalAgregarOpen] = useState(false)
 	const [modalCrearInventarioOpen, setModalCrearInventarioOpen] = useState(false)
-	const [inventarioId, setInventarioId] = useState(1)
-
+	const [inventarioId, setInventarioId] = useState<number | undefined>(undefined)
+	
+	const { currentOrganizationId, isLoading: isOrgLoading } = useOrganization()
+	
 	const { data, isLoading } = useQuery<INVENTORY_TYPE[]>({
-		queryKey: ['inventarios'],
-		queryFn: () => getInventarios({ data: { id: 1 } }),
+		queryKey: ['inventarios', currentOrganizationId],
+		queryFn: () => getInventarios({ data: { id: currentOrganizationId! } }),
+		enabled: !!currentOrganizationId,
 	})
+
+	useEffect(() => {
+		if (data && data.length > 0 && !inventarioId) {
+			setInventarioId(data[0].id)
+		}
+	}, [data, inventarioId])
+
+	useEffect(() => {
+		setInventarioId(undefined)
+	}, [currentOrganizationId])
 
 	const handleCrearInventario = () => {
 		queryClient.invalidateQueries({ queryKey: ['inventarios'] })
 	}
+
+	const tieneInventarios = data && data.length > 0
+	const inventarioSeleccionado = data?.find((inv) => inv.id === inventarioId)
 
 	return (
 		<div className="min-h-screen bg-background">
@@ -67,14 +85,14 @@ function RouteComponent() {
 			<div className="md:ml-64">
 				<header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background px-6">
 					<div className="flex items-center gap-2 text-sm">
-						{isLoading ? (
+						{isLoading || isOrgLoading ? (
 							<span className="text-sm text-muted-foreground">Cargando...</span>
-						) : data && data.length > 0 ? (
+						) : tieneInventarios ? (
 							<div className="flex items-center gap-2">
 								<span className="text-sm font-medium">Inventario:</span>
 								<DropdownMenu>
 									<DropdownMenuTrigger className="min-w-[120px] inline-flex items-center justify-between gap-2" >
-										{data.find((inv) => inv.id === inventarioId)?.name ?? 'Seleccionar'}
+										{inventarioSeleccionado?.name ?? 'Seleccionar'}
 										<HugeiconsIcon icon={ArrowDown01Icon} size={14} className="ml-2" />
 									</DropdownMenuTrigger>
 									<DropdownMenuContent align="start" className="w-[200px]">
@@ -86,7 +104,9 @@ function RouteComponent() {
 											onValueChange={(v) => setInventarioId(Number(v))}
 										>
 											<SelectTrigger className="border-0 bg-transparent shadow-none focus:ring-0">
-												<SelectValue />
+												<SelectValue>
+												{data.find((inv) => inv.id === inventarioId)?.name ?? 'Seleccionar'}
+												</SelectValue>
 											</SelectTrigger>
 											<SelectContent>
 												{data.map((inv) => (
@@ -118,43 +138,34 @@ function RouteComponent() {
 						)}
 					</div>
 
-					<div className="flex items-center gap-2">
-						<Button
-							size="sm"
-							className="bg-primary"
-							onClick={() => setModalAgregarOpen(true)}
-						>
-							<HugeiconsIcon
-								icon={PlusSignIcon}
-								size={16}
-								strokeWidth={1.5}
-								className="mr-1"
-							/>
-							Agregar Producto
-						</Button>
-					</div>
+		
 				</header>
 
 				<main className="p-6 space-y-4">
+					{!tieneInventarios ? (
+						<SinInventarios onCrearInventario={() => setModalCrearInventarioOpen(true)} />
+					) : !inventarioId ? (
+						<div className="flex flex-1 items-center justify-center py-10">
+							<span className="text-muted-foreground">Selecciona un inventario</span>
+						</div>
+					) : (
+						<>
+							<BarraAcciones
+								search={search}
+								onSearchChange={setSearch}
+								filtros={filtros}
+								onFiltrosChange={setFiltros}
+							/>
 
-					<BarraAcciones
-						search={search}
-						onSearchChange={setSearch}
-						filtros={filtros}
-						onFiltrosChange={setFiltros}
-					/>
+							<TablaInventario
+								inventoryId={inventarioId}
+								organizationId={inventarioSeleccionado?.organizationId ?? 0}
+								search={search}
+								filtros={filtros}
+							/>
 
-					<TablaInventario
-						inventoryId={inventarioId}
-						search={search}
-						filtros={filtros}
-					/>
-
-					<AgregarEditarModal
-						idInvetario={inventarioId}
-						open={modalAgregarOpen}
-						onOpenChange={setModalAgregarOpen}
-					/>
+						</>
+					)}
 
 					<CrearInventarioModal
 						open={modalCrearInventarioOpen}

@@ -3,27 +3,24 @@ import { Link, useLocation } from '@tanstack/react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   ArrowUpIcon,
-  Grid02Icon,
   Home01FreeIcons,
-  LayoutGridIcon,
-  PackageIcon,
   Settings01Icon,
+  ArrowDown01Icon,
 } from '@hugeicons/core-free-icons'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 
 import ThemeToggle from '@/components/ThemeToggle'
 import { authClient } from '@/lib/auth-client'
-import { useQuery } from '@tanstack/react-query'
-import { getUserOrg } from '@/server/actions/organization.functions'
-
-const userData = {
-  name: 'Mi Negocio',
-  role: 'Plan Gratuito',
-}
+import { useOrganization } from '@/contexts/OrganizationContext'
 
 function NavLink({
   href,
@@ -55,41 +52,63 @@ function NavLink({
 }
 
 function SidebarContent({ isMobile = false }: { isMobile?: boolean }) {
-	const { data: session } = authClient.useSession()  
-	const { data, isLoading } = useQuery({
-		queryKey: ['user-org'],
-		queryFn: () => {
-			const userOrg = getUserOrg()
-			return userOrg
-		},
-	})
+  const { data: session } = authClient.useSession()
+  const { organizations, currentOrganizationId, setCurrentOrganization, isLoading } = useOrganization()
+
+  const currentOrg = organizations.find(
+    (org) => org.organizationId === currentOrganizationId
+  )
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex flex-col gap-6 p-6">
-	  <Link to="/">
-        <div className="flex items-center gap-3">
-		          <div className="flex size-10 items-center justify-center rounded-lg bg-primary/20">
-            <HugeiconsIcon icon={ArrowUpIcon} size={4} strokeWidth={2} />
+        <Link to="/">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-lg bg-primary/20">
+              <HugeiconsIcon icon={ArrowUpIcon} size={4} strokeWidth={2} />
+            </div>
+            <span className="font-bold text-foreground">koalaInv</span>
           </div>
-          <span className="font-bold text-foreground">koalaInv</span>
-		  
-        </div>
-		</Link>
+        </Link>
 
         <div className="flex items-center gap-3">
           <Avatar className="size-8">
             <AvatarFallback className="bg-muted text-xs font-bold">
-              M
+              {session?.user?.name?.[0]?.toUpperCase() || 'U'}
             </AvatarFallback>
           </Avatar>
-          <div className="flex flex-col">
+          <div className="flex flex-1 flex-col">
             <span className="text-sm font-semibold text-foreground">
-              {session?.user?.name}
+              {session?.user?.name ?? 'Usuario'}
             </span>
-            <span className="text-xs text-muted-foreground">
-			{ isLoading ? "cargando..." : `${data?.organizationName} ${data?.role}`}
-            </span>
+            {organizations.length > 1 ? (
+              <Popover>
+                <PopoverTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+                    {currentOrg?.organizationName || 'Seleccionar org'}
+                </PopoverTrigger>
+                <PopoverContent className="w-48 p-2" align="start">
+                  <div className="space-y-1">
+                    {organizations.map((org) => (
+                      <button
+                        key={org.organizationId}
+                        onClick={() => setCurrentOrganization(org.organizationId)}
+                        className={cn(
+                          'flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-muted',
+                          org.organizationId === currentOrganizationId && 'bg-muted font-medium'
+                        )}
+                      >
+                        <span>{org.organizationName}</span>
+                        <span className="text-xs text-muted-foreground">{org.role}</span>
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            ) : (
+              <span className="text-xs text-muted-foreground">
+                {isLoading ? 'cargando...' : `${currentOrg?.organizationName ?? 'cargando'} (${currentOrg?.role ?? 'cargando'})`}
+              </span>
+            )}
           </div>
           <div className="ml-auto flex items-center gap-1">
             <ThemeToggle />

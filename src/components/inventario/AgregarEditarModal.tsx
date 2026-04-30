@@ -26,7 +26,7 @@ interface AgregarEditarModalProps {
 	isEditing?: boolean
 	open: boolean
 	onOpenChange: (open: boolean) => void
-	onSuccess?: () => void
+	onSuccess: () => void
 }
 
 const formSchema = z.object({
@@ -66,9 +66,15 @@ export function AgregarEditarModal({
 			onSubmit: formSchema,
 		},
 		onSubmit: async ({ value }) => {
-			isEditing ? await updateProducto({ data: { id: value.id, product: value } }) :
+			const result = isEditing ? await updateProducto({ data: { id: value.id, product: value } }) :
 				await createProducto({ data: value })
-		} ,
+			if (result) {
+				form.reset()
+				onSuccess()
+
+			}
+		},
+
 	})
 
 

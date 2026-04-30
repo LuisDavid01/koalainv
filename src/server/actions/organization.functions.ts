@@ -13,6 +13,11 @@ export const getUserOrg = createServerFn({ method: 'GET' })
 		return await QUERIES.getUserOrg()
 	})
 
+export const getUserOrganizations = createServerFn({ method: 'GET' })
+	.handler(async () => {
+		return await QUERIES.getUserOrganizations()
+	})
+
 export const createUserOrganization = createServerFn({ method: 'POST' })
 	.inputValidator((data: { name: string }) => data)
 	.handler(async ({ data }) => {

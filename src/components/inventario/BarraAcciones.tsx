@@ -99,7 +99,7 @@ export function BarraAcciones({
 
       <div className="flex gap-2">
         <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
-          <PopoverTrigger>
+          <PopoverTrigger className={"inline-flex items-center"}>
               <HugeiconsIcon
                 icon={FilterHorizontalIcon}
                 size={16}
@@ -209,7 +209,7 @@ export function BarraAcciones({
         </Popover>
 
         <DropdownMenu>
-          <DropdownMenuTrigger>
+          <DropdownMenuTrigger className={"inline-flex items-center"}>
               Acciones
               <HugeiconsIcon
                 icon={ArrowDown01Icon}

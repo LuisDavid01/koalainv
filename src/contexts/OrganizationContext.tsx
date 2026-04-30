@@ -1,38 +1,63 @@
-import { createContext, useContext } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { createContext, useContext, useState, useEffect } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { authClient } from '@/lib/auth-client'
-import { getUserOrg } from '@/server/actions/organization.functions'
+import { getUserOrganizations } from '@/server/actions/organization.functions'
+
+export type Organization = {
+  organizationId: number
+  organizationName: string
+  role: string
+}
 
 export type OrganizationContextType = {
-  organizationId: number | null
-  organizationName: string | null
-  role: string | null
+  organizations: Organization[]
+  currentOrganizationId: number | null
+  setCurrentOrganization: (id: number) => void
   isLoading: boolean
+  isAuthenticated: boolean
 }
 
 export const OrganizationContext = createContext<OrganizationContextType>({
-  organizationId: null,
-  organizationName: null,
-  role: null,
+  organizations: [],
+  currentOrganizationId: null,
+  setCurrentOrganization: () => {},
   isLoading: true,
+  isAuthenticated: false,
 })
 
 export function OrganizationProvider({ children }: { children: React.ReactNode }) {
-  const { data: session, } = authClient.useSession()
+  const [currentOrganizationId, setCurrentOrganizationId] = useState<number | null>(null)
+  const queryClient = useQueryClient()
 
-  const { data: userOrg, isLoading: isOrgLoading } = useQuery({
-    queryKey: ['user-org'],
-    queryFn: () => getUserOrg(),
+  const { data: session } = authClient.useSession()
+
+  const { data: organizations = [], isLoading: isOrgsLoading } = useQuery({
+    queryKey: ['user-organizations'],
+    queryFn: () => getUserOrganizations(),
     enabled: !!session,
   })
 
-  const isLoading = isOrgLoading
+  const isLoading =  isOrgsLoading
+  const isAuthenticated = !!session
+
+  useEffect(() => {
+    if (!isLoading && organizations.length > 0 && currentOrganizationId === null) {
+      setCurrentOrganizationId(organizations[0].organizationId)
+    }
+  }, [isLoading, organizations, currentOrganizationId])
+
+  const setCurrentOrganization = (id: number) => {
+    setCurrentOrganizationId(id)
+    queryClient.invalidateQueries({ queryKey: ['productos'] })
+    queryClient.invalidateQueries({ queryKey: ['inventarios'] })
+  }
 
   const value: OrganizationContextType = {
-    organizationId: userOrg?.organizationId ?? null,
-    organizationName: userOrg?.organizationName ?? null,
-    role: userOrg?.role ?? null,
+    organizations,
+    currentOrganizationId,
+    setCurrentOrganization,
     isLoading,
+    isAuthenticated,
   }
 
   return (

@@ -2,10 +2,16 @@ import { createServerFn } from '@tanstack/react-start'
 import { QUERIES } from '../queries.server'
 import { MUTATIONS } from '../mutations.server'
 import type { ProductoFilters, ProductoWithStock } from '../queries.server'
+import { isCurrentUserOrgMember } from '../roles.server'
 
 export const getProductos = createServerFn({ method: 'GET' })
   .inputValidator((data: ProductoFilters) => data)
   .handler(async ({ data }) => {
+
+	  const isMember = await isCurrentUserOrgMember(data.organizationId)
+	  if (!isMember){
+		  throw new Error('No tienes permisos para acceder a este recurso')
+	  }
     return await QUERIES.getProductosByInventoryId(data)
   })
 
@@ -16,7 +22,7 @@ export const getProducto = createServerFn({ method: 'GET' })
   })
 
 export const createProducto = createServerFn({ method: 'POST' })
-  .inputValidator((data: ProductoWithStock) => data)
+  .inputValidator((data: ProductoWithStock & { organizationId: number }) => data)
   .handler(async ({ data }) => {
     console.log('creando producto')
     return await MUTATIONS.createProducto(data)
@@ -24,7 +30,7 @@ export const createProducto = createServerFn({ method: 'POST' })
 
 export const updateProducto = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { product: ProductoWithStock, id: number}) => data,
+    (data: { product: ProductoWithStock & { organizationId: number }, id: number }) => data,
   )
   .handler(async ({ data }) => {
     return await MUTATIONS.updateProducto(data.id, data.product)

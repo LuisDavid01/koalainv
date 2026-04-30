@@ -15,6 +15,7 @@ import {
 	EyeIcon,
 	PencilEdit01Icon,
 	Delete02Icon,
+	PlusSignIcon,
 } from '@hugeicons/core-free-icons'
 
 import { Card } from '@/components/ui/card'
@@ -49,6 +50,7 @@ const columnHelper = createColumnHelper<ProductoWithStock>()
 
 interface TablaInventarioProps {
 	inventoryId: number
+	organizationId: number
 	search: string
 	filtros: {
 		categoria: string | null
@@ -60,6 +62,7 @@ interface TablaInventarioProps {
 
 export function TablaInventario({
 	inventoryId,
+	organizationId,
 	search,
 	filtros,
 }: TablaInventarioProps) {
@@ -69,6 +72,9 @@ export function TablaInventario({
 		pageIndex: 0,
 		pageSize: 10,
 	})
+
+	const [modalAgregarOpen, setModalAgregarOpen] = useState(false)
+
 	const [currentPage, setCurrentPage] = useState(1)
 	const [productoVer, setProductoVer] = useState<ProductoWithStock | null>(null)
 	const [productoEditar, setProductoEditar] = useState<ProductoWithStock | null>(
@@ -78,12 +84,13 @@ export function TablaInventario({
 		null,
 	)
 
-	const { data, isLoading } = useQuery({
-		queryKey: ['productos', inventoryId, search, filtros, pagination],
+	const { data, isLoading, error } = useQuery({
+		queryKey: ['productos', inventoryId, organizationId, search, filtros, pagination],
 		queryFn: () => {
 			const productos = getProductos({
 				data: {
 					inventoryId,
+					organizationId,
 					search: search || undefined,
 					page: pagination.pageIndex + 1,
 					limit: pagination.pageSize,
@@ -102,7 +109,7 @@ export function TablaInventario({
 		mutationFn: ({ idProducto, idInventario }: { idProducto: number, idInventario: number }) =>
 			deleteProducto({ data: { idProducto, idInventario } }),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['productos'] })
+			queryClient.invalidateQueries({ queryKey: ['productos', inventoryId, organizationId, search, filtros, pagination] })
 			setProductoEliminar(null)
 		},
 	})
@@ -207,9 +214,9 @@ export function TablaInventario({
 				</span>
 			),
 			cell: ({ row }) => (
-				<div className="flex justify-end gap-1">
+				<div className="flex gap-1">
 					<Button
-						variant="ghost"
+						variant="secondary"
 						size="icon"
 						className="size-8"
 						onClick={() => setProductoVer(row.original)}
@@ -235,7 +242,7 @@ export function TablaInventario({
 						/>
 					</Button>
 					<Button
-						variant="ghost"
+						variant="destructive"
 						size="icon"
 						className="size-8"
 						onClick={() => setProductoEliminar(row.original)}
@@ -281,10 +288,29 @@ export function TablaInventario({
 		setPagination(prev => ({ ...prev, pageIndex: 0 }))
 	}, [search, filtros.categoria, filtros.estadoStock, filtros.precioMin, filtros.precioMax])
 
+	function onSuccess() {
+		queryClient.invalidateQueries({ queryKey: ['productos', inventoryId, organizationId, search, filtros, pagination] })
+	}
+
 
 
 	return (
 		<>
+			<div className="flex items-center gap-2">
+				<Button
+					size="sm"
+					className="bg-primary"
+					onClick={() => setModalAgregarOpen(true)}
+				>
+					<HugeiconsIcon
+						icon={PlusSignIcon}
+						size={16}
+						strokeWidth={1.5}
+						className="mr-1"
+					/>
+					Agregar Producto
+				</Button>
+			</div>
 			<Card className="overflow-hidden rounded-xl border">
 				<div className="flex items-center justify-between border-b px-4 py-3">
 					<span className="text-xs text-muted-foreground">
@@ -331,6 +357,7 @@ export function TablaInventario({
 									colSpan={columns.length}
 									className="h-24 text-center"
 								>
+									{error?.message}
 									No hay productos
 								</TableCell>
 							</TableRow>
@@ -410,6 +437,7 @@ export function TablaInventario({
 					isEditing={true}
 					open={!!productoEditar}
 					onOpenChange={(open) => !open && setProductoEditar(null)}
+					onSuccess={onSuccess}
 				/>
 			)}
 
@@ -422,6 +450,14 @@ export function TablaInventario({
 					isDeleting={deleteMutation.isPending}
 				/>
 			)}
+
+
+			<AgregarEditarModal
+				idInvetario={inventoryId}
+				open={modalAgregarOpen}
+				onOpenChange={setModalAgregarOpen}
+				onSuccess={onSuccess}
+			/>
 		</>
 	)
 }

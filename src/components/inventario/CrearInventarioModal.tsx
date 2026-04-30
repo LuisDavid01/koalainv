@@ -12,6 +12,7 @@ import { createInventario } from '@/server/actions/inventarios.functions'
 import { z } from 'zod'
 import { useForm } from '@tanstack/react-form'
 import { Field, FieldError, FieldGroup, FieldLabel } from '../ui/field'
+import { useOrganization } from '@/contexts/OrganizationContext'
 
 interface CrearInventarioModalProps {
 	open: boolean
@@ -30,10 +31,11 @@ export function CrearInventarioModal({
 	onOpenChange,
 	onSuccess,
 }: CrearInventarioModalProps) {
+	const { currentOrganizationId } = useOrganization()
 	const form = useForm({
 		defaultValues: {
 			name: '',
-			organizationId: 1,
+			organizationId: currentOrganizationId!,
 			active: true,
 		},
 		validators: {

@@ -13,6 +13,7 @@ import { auth } from '@/lib/auth'
 import {
 	getRequest,
 } from '@tanstack/react-start/server'
+import { isCurrentUserOrgMember } from './roles.server'
 
 export type ProductoWithStock = {
 	id: number
@@ -32,6 +33,7 @@ export type ProductoWithStock = {
 
 export type ProductoFilters = {
 	inventoryId?: number
+	organizationId?: number
 	page?: number
 	limit?: number
 	search?: string
@@ -61,7 +63,9 @@ export const QUERIES = {
 					sortOrder = 'desc',
 				} = filters
 
-				const baseConditions: any[] = []
+				const baseConditions: any[] = [
+					eq(inventoryProductTable.active, true)
+				]
 
 				if (inventoryId) {
 					baseConditions.push(eq(inventoryProductTable.inventoryId, inventoryId))
@@ -97,14 +101,18 @@ export const QUERIES = {
 
 				let total: number = 0
 
-				const [countResult] = await db
-					.select({ count: sql<number>`count(*)` })
+				const [result] = await db
+					.select({ 
+						count: sql<number>`count(*)`,
+
+					})
 					.from(inventoryProductTable)
 					.innerJoin(productTable, eq(inventoryProductTable.productId, productTable.id))
 					.innerJoin(categoryTable, eq(productTable.categoryId, categoryTable.id))
 					.where(and(...baseConditions))
 
-				total = countResult?.count ?? 0
+
+				total = result.count ?? 0
 
 				const productos = await db
 					.select({
@@ -150,6 +158,8 @@ export const QUERIES = {
 	},
 
 	getInventarioByOrgId: async function(id: number): Promise<INVENTORY_TYPE[]> {
+
+
 		const inventory = await db
 			.select()
 			.from(inventoryTable)
@@ -161,6 +171,33 @@ export const QUERIES = {
 			)
 
 		return inventory ?? []
+	},
+	getUserOrganizations: async function() {
+		const request = getRequest()
+
+		const user = await auth.api.getSession({
+			headers: request.headers,
+		})
+
+		if (!user?.session.id) {
+			throw new Error('No session found')
+		}
+
+		const results = await db
+			.select({
+				organizationId: organizationTable.id,
+				organizationName: organizationTable.name,
+				role: organizationMember.role,
+			})
+			.from(organizationMember)
+			.innerJoin(organizationTable, eq(organizationMember.organizationId, organizationTable.id))
+			.where(and(
+				eq(organizationMember.userId, user.user.id),
+				eq(organizationMember.active, true)
+			))
+
+		return results
+
 	},
 	getUserOrg: async function() {
 		const request = getRequest()

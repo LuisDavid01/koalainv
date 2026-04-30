@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SelectOrganizationRouteImport } from './routes/select-organization'
 import { Route as ResetPasswordRouteImport } from './routes/resetPassword'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
@@ -23,6 +24,11 @@ import { Route as DashboardFacturasIndexRouteImport } from './routes/dashboard/f
 import { Route as DashboardAuditoriaIndexRouteImport } from './routes/dashboard/auditoria/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
+const SelectOrganizationRoute = SelectOrganizationRouteImport.update({
+  id: '/select-organization',
+  path: '/select-organization',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/resetPassword',
   path: '/resetPassword',
@@ -97,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/register': typeof RegisterRoute
   '/resetPassword': typeof ResetPasswordRoute
+  '/select-organization': typeof SelectOrganizationRoute
   '/posts/$postId': typeof PostsPostIdRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/posts/': typeof PostsIndexRoute
@@ -112,6 +119,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/register': typeof RegisterRoute
   '/resetPassword': typeof ResetPasswordRoute
+  '/select-organization': typeof SelectOrganizationRoute
   '/posts/$postId': typeof PostsPostIdRoute
   '/dashboard': typeof DashboardIndexRoute
   '/posts': typeof PostsIndexRoute
@@ -128,6 +136,7 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/register': typeof RegisterRoute
   '/resetPassword': typeof ResetPasswordRoute
+  '/select-organization': typeof SelectOrganizationRoute
   '/posts/$postId': typeof PostsPostIdRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/posts/': typeof PostsIndexRoute
@@ -145,6 +154,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/register'
     | '/resetPassword'
+    | '/select-organization'
     | '/posts/$postId'
     | '/dashboard/'
     | '/posts/'
@@ -160,6 +170,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/register'
     | '/resetPassword'
+    | '/select-organization'
     | '/posts/$postId'
     | '/dashboard'
     | '/posts'
@@ -175,6 +186,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/register'
     | '/resetPassword'
+    | '/select-organization'
     | '/posts/$postId'
     | '/dashboard/'
     | '/posts/'
@@ -191,6 +203,7 @@ export interface RootRouteChildren {
   OnboardingRoute: typeof OnboardingRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SelectOrganizationRoute: typeof SelectOrganizationRoute
   PostsPostIdRoute: typeof PostsPostIdRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
   PostsIndexRoute: typeof PostsIndexRoute
@@ -202,6 +215,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/select-organization': {
+      id: '/select-organization'
+      path: '/select-organization'
+      fullPath: '/select-organization'
+      preLoaderRoute: typeof SelectOrganizationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/resetPassword': {
       id: '/resetPassword'
       path: '/resetPassword'
@@ -303,6 +323,7 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingRoute: OnboardingRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SelectOrganizationRoute: SelectOrganizationRoute,
   PostsPostIdRoute: PostsPostIdRoute,
   DashboardIndexRoute: DashboardIndexRoute,
   PostsIndexRoute: PostsIndexRoute,
